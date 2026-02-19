@@ -1,7 +1,8 @@
 import uuid
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Numeric, String, Text, text
+from sqlalchemy import Boolean, CheckConstraint, Computed, ForeignKey, Index, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base, TimestampMixin, UUIDMixin
@@ -11,11 +12,7 @@ class Product(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "products"
     __table_args__ = (
         CheckConstraint("price >= 0", name="ck_products_price_non_negative"),
-        Index(
-            "ix_products_search_vector",
-            text("to_tsvector('english', name || ' ' || coalesce(description, ''))"),
-            postgresql_using="gin",
-        ),
+        Index("ix_products_search_vector", "search_vector", postgresql_using="gin"),
     )
 
     name: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -28,6 +25,14 @@ class Product(UUIDMixin, TimestampMixin, Base):
         nullable=False,
     )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    search_vector: Mapped[str] = mapped_column(
+        TSVECTOR,
+        Computed(
+            "to_tsvector('english', name || ' ' || coalesce(description, ''))",
+            persisted=True,
+        ),
+        nullable=False,
+    )
 
     category: Mapped["Category"] = relationship(
         "Category",
