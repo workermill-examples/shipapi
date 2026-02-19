@@ -6,7 +6,7 @@ from .auth import (
     TokenResponse,
     UserResponse,
 )
-from .common import ErrorCode, ErrorDetail, ErrorResponse, Pagination, PaginatedResponse
+from .common import ErrorCode, ErrorDetail, ErrorResponse, PaginatedResponse, Pagination
 from .health import HealthResponse
 
 __all__ = [
