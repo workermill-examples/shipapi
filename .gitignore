@@ -1,5 +1,8 @@
 
 node_modules
+__pycache__/
+*.pyc
+*.pyo
 .workermill-message.md
 .workermill-response.md
 .workermill-answer.md
