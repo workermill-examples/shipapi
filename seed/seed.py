@@ -7,14 +7,17 @@ Requires DATABASE_URL and JWT_SECRET_KEY environment variables (or a .env file).
 """
 
 import asyncio
+import datetime
+import hashlib
 import os
 import uuid
 from decimal import Decimal
+from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from src.models import Category, Product, User
+from src.models import AuditLog, Category, Product, StockLevel, StockTransfer, User, Warehouse
 from src.services.auth import get_api_key_prefix, hash_api_key, hash_password
 
 # ---------------------------------------------------------------------------
@@ -37,7 +40,11 @@ CATEGORY_TREE: list[dict] = [
         "description": "Electronic devices, computers, and accessories",
         "prefix": "ELEC",
         "children": [
-            {"name": "Smartphones", "description": "Mobile phones and smartphones", "prefix": "SMT"},
+            {
+                "name": "Smartphones",
+                "description": "Mobile phones and smartphones",
+                "prefix": "SMT",
+            },
             {"name": "Laptops", "description": "Portable computers and notebooks", "prefix": "LAP"},
             {
                 "name": "Accessories",
@@ -772,6 +779,199 @@ PRODUCTS: list[dict] = [
 
 
 # ---------------------------------------------------------------------------
+# Warehouses: 3 distribution centres
+# ---------------------------------------------------------------------------
+
+WAREHOUSES: list[dict[str, Any]] = [
+    {"name": "East Coast Hub", "location": "New York, NY", "capacity": 10000},
+    {"name": "West Coast Hub", "location": "Los Angeles, CA", "capacity": 8000},
+    {"name": "Central Warehouse", "location": "Chicago, IL", "capacity": 12000},
+]
+
+# SKUs where the first warehouse should have quantity < min_threshold (alerts testing)
+BELOW_THRESHOLD_SKUS: frozenset[str] = frozenset(
+    {
+        "ELEC-SMT-001",
+        "ELEC-LAP-003",
+        "ELEC-ACC-002",
+        "SPRT-RUN-001",
+        "SPRT-CYC-001",
+        "SPRT-SWM-001",
+        "HOME-KIT-002",
+        "HOME-OUT-001",
+        "CLTH-WMN-002",
+        "BOOK-TCH-001",
+    }
+)
+
+# ---------------------------------------------------------------------------
+# Transfer specs: 20 transfers over the past 30 days
+# ---------------------------------------------------------------------------
+
+TRANSFER_SPECS: list[dict[str, Any]] = [
+    {
+        "sku": "ELEC-SMT-001",
+        "from_wh": "West Coast Hub",
+        "to_wh": "East Coast Hub",
+        "qty": 25,
+        "days_ago": 29,
+        "notes": "Replenishing East Coast smartphone inventory ahead of spring promotional campaign.",
+    },
+    {
+        "sku": "ELEC-LAP-001",
+        "from_wh": "Central Warehouse",
+        "to_wh": "East Coast Hub",
+        "qty": 10,
+        "days_ago": 27,
+        "notes": "Balancing laptop stock levels across distribution centres.",
+    },
+    {
+        "sku": "SPRT-RUN-001",
+        "from_wh": "East Coast Hub",
+        "to_wh": "Central Warehouse",
+        "qty": 30,
+        "days_ago": 25,
+        "notes": "Redistributing running shoe inventory to support Midwest demand.",
+    },
+    {
+        "sku": "HOME-KIT-002",
+        "from_wh": "West Coast Hub",
+        "to_wh": "Central Warehouse",
+        "qty": 15,
+        "days_ago": 24,
+        "notes": "Transferring blender stock to fulfil Central region backorders.",
+    },
+    {
+        "sku": "CLTH-WMN-002",
+        "from_wh": "East Coast Hub",
+        "to_wh": "West Coast Hub",
+        "qty": 8,
+        "days_ago": 22,
+        "notes": "Rebalancing cashmere sweater stock ahead of West Coast retail season.",
+    },
+    {
+        "sku": "BOOK-TCH-001",
+        "from_wh": "Central Warehouse",
+        "to_wh": "West Coast Hub",
+        "qty": 20,
+        "days_ago": 21,
+        "notes": "Moving technical books to West Coast hub for fulfilment efficiency.",
+    },
+    {
+        "sku": "ELEC-ACC-002",
+        "from_wh": "Central Warehouse",
+        "to_wh": "East Coast Hub",
+        "qty": 12,
+        "days_ago": 20,
+        "notes": "Restocking East Coast monitor inventory following high-volume B2B order.",
+    },
+    {
+        "sku": "SPRT-CYC-001",
+        "from_wh": "West Coast Hub",
+        "to_wh": "Central Warehouse",
+        "qty": 18,
+        "days_ago": 18,
+        "notes": "Cycling helmet transfer to support Midwest cycling event partnerships.",
+    },
+    {
+        "sku": "HOME-OUT-001",
+        "from_wh": "East Coast Hub",
+        "to_wh": "West Coast Hub",
+        "qty": 6,
+        "days_ago": 17,
+        "notes": "Moving garden furniture to West Coast for summer season preparation.",
+    },
+    {
+        "sku": "ELEC-LAP-003",
+        "from_wh": "West Coast Hub",
+        "to_wh": "East Coast Hub",
+        "qty": 5,
+        "days_ago": 15,
+        "notes": "Gaming laptop restock for East Coast e-sports retail partners.",
+    },
+    {
+        "sku": "CLTH-MEN-001",
+        "from_wh": "East Coast Hub",
+        "to_wh": "Central Warehouse",
+        "qty": 35,
+        "days_ago": 14,
+        "notes": "Distributing merino wool hoodies to support nationwide retail push.",
+    },
+    {
+        "sku": "SPRT-SWM-001",
+        "from_wh": "Central Warehouse",
+        "to_wh": "West Coast Hub",
+        "qty": 22,
+        "days_ago": 13,
+        "notes": "Transferring swimwear inventory ahead of West Coast swim season.",
+    },
+    {
+        "sku": "HOME-KIT-003",
+        "from_wh": "West Coast Hub",
+        "to_wh": "East Coast Hub",
+        "qty": 14,
+        "days_ago": 12,
+        "notes": "Rebalancing Dutch oven stock to meet East Coast chef retail demand.",
+    },
+    {
+        "sku": "BOOK-BIZ-001",
+        "from_wh": "East Coast Hub",
+        "to_wh": "Central Warehouse",
+        "qty": 40,
+        "days_ago": 10,
+        "notes": "Moving business books to Central hub for national corporate sales programme.",
+    },
+    {
+        "sku": "ELEC-SMT-002",
+        "from_wh": "Central Warehouse",
+        "to_wh": "West Coast Hub",
+        "qty": 50,
+        "days_ago": 9,
+        "notes": "BrightStar Lite 8 transfer to West Coast ahead of carrier promotion launch.",
+    },
+    {
+        "sku": "SPRT-RUN-003",
+        "from_wh": "West Coast Hub",
+        "to_wh": "Central Warehouse",
+        "qty": 15,
+        "days_ago": 8,
+        "notes": "GPS watch inventory redistribution following regional fitness expo.",
+    },
+    {
+        "sku": "CLTH-KDS-001",
+        "from_wh": "East Coast Hub",
+        "to_wh": "West Coast Hub",
+        "qty": 28,
+        "days_ago": 6,
+        "notes": "Redistributing kids waterproof jackets for West Coast rainy season.",
+    },
+    {
+        "sku": "HOME-DEC-001",
+        "from_wh": "Central Warehouse",
+        "to_wh": "East Coast Hub",
+        "qty": 16,
+        "days_ago": 5,
+        "notes": "Ceramic vase set transfer for East Coast home decor boutique orders.",
+    },
+    {
+        "sku": "ELEC-ACC-001",
+        "from_wh": "West Coast Hub",
+        "to_wh": "Central Warehouse",
+        "qty": 45,
+        "days_ago": 3,
+        "notes": "ProSound earbuds restock to meet Central region holiday pre-orders.",
+    },
+    {
+        "sku": "BOOK-FCT-001",
+        "from_wh": "East Coast Hub",
+        "to_wh": "West Coast Hub",
+        "qty": 30,
+        "days_ago": 1,
+        "notes": "Moving fiction titles to West Coast ahead of book club season.",
+    },
+]
+
+# ---------------------------------------------------------------------------
 # Seed functions
 # ---------------------------------------------------------------------------
 
@@ -857,9 +1057,7 @@ async def seed_categories(session: AsyncSession) -> dict[str, Category]:
 async def seed_products(session: AsyncSession, category_map: dict[str, Category]) -> None:
     """Create products idempotently (checked by SKU)."""
     for product_data in PRODUCTS:
-        result = await session.execute(
-            select(Product).where(Product.sku == product_data["sku"])
-        )
+        result = await session.execute(select(Product).where(Product.sku == product_data["sku"]))
         if result.scalar_one_or_none() is not None:
             print(f"  ✓ Product already exists: {product_data['sku']}")
             continue
@@ -867,7 +1065,9 @@ async def seed_products(session: AsyncSession, category_map: dict[str, Category]
         cat_prefix: str = product_data["category_prefix"]
         category = category_map.get(cat_prefix)
         if category is None:
-            print(f"  ✗ Category not found for prefix: {cat_prefix} — skipping {product_data['sku']}")
+            print(
+                f"  ✗ Category not found for prefix: {cat_prefix} — skipping {product_data['sku']}"
+            )
             continue
 
         product = Product(
@@ -884,6 +1084,338 @@ async def seed_products(session: AsyncSession, category_map: dict[str, Category]
         print(f"  ✓ Created product: {product_data['sku']} – {product_data['name']}")
 
     await session.flush()
+
+
+def _det_int(seed_str: str, lo: int, hi: int) -> int:
+    """Return a deterministic int in [lo, hi] derived from seed_str via SHA-256."""
+    h = int(hashlib.sha256(seed_str.encode()).hexdigest(), 16)
+    return lo + (h % (hi - lo + 1))
+
+
+async def seed_warehouses(session: AsyncSession) -> list[Warehouse]:
+    """Create 3 demo warehouses idempotently (checked by name)."""
+    result_list: list[Warehouse] = []
+    for wh_data in WAREHOUSES:
+        result = await session.execute(select(Warehouse).where(Warehouse.name == wh_data["name"]))
+        existing = result.scalar_one_or_none()
+        if existing is not None:
+            print(f"  ✓ Warehouse already exists: {wh_data['name']}")
+            result_list.append(existing)
+        else:
+            wh = Warehouse(
+                id=uuid.uuid4(),
+                name=wh_data["name"],
+                location=wh_data["location"],
+                capacity=wh_data["capacity"],
+                is_active=True,
+            )
+            session.add(wh)
+            await session.flush()
+            print(f"  ✓ Created warehouse: {wh_data['name']}")
+            result_list.append(wh)
+    return result_list
+
+
+async def seed_stock_levels(session: AsyncSession, warehouses: list[Warehouse]) -> None:
+    """Create stock levels for all 50 products × 3 warehouses = 150 records.
+
+    Idempotent per (product_id, warehouse_id).  At least 10 products have
+    quantity < min_threshold in their first warehouse for low-stock alerts testing.
+    """
+    products_result = await session.execute(select(Product).order_by(Product.sku))
+    products = list(products_result.scalars().all())
+
+    created = 0
+    skipped = 0
+    for product in products:
+        for wh_idx, warehouse in enumerate(warehouses):
+            check = await session.execute(
+                select(StockLevel).where(
+                    StockLevel.product_id == product.id,
+                    StockLevel.warehouse_id == warehouse.id,
+                )
+            )
+            if check.scalar_one_or_none() is not None:
+                skipped += 1
+                continue
+
+            seed_key = f"{product.sku}:{warehouse.name}"
+            if product.sku in BELOW_THRESHOLD_SKUS and wh_idx == 0:
+                # Force a below-threshold state so low-stock alerts can be tested
+                quantity = _det_int(seed_key + ":low_qty", 0, 8)
+                min_threshold = _det_int(seed_key + ":thr", 15, 30)
+            else:
+                quantity = _det_int(seed_key + ":qty", 20, 500)
+                min_threshold = _det_int(seed_key + ":thr", 5, 50)
+
+            stock = StockLevel(
+                id=uuid.uuid4(),
+                product_id=product.id,
+                warehouse_id=warehouse.id,
+                quantity=quantity,
+                min_threshold=min_threshold,
+            )
+            session.add(stock)
+            created += 1
+
+    await session.flush()
+    print(f"  ✓ Created {created} stock levels ({skipped} already existed)")
+
+
+async def seed_transfers(
+    session: AsyncSession,
+    admin_user: User,
+    warehouses: list[Warehouse],
+) -> None:
+    """Create 20 stock transfers over the past 30 days, idempotent by count."""
+    count_result = await session.execute(
+        select(func.count(StockTransfer.id)).where(StockTransfer.initiated_by == admin_user.id)
+    )
+    if (count_result.scalar() or 0) >= 20:
+        print("  ✓ Stock transfers already seeded")
+        return
+
+    products_result = await session.execute(select(Product).order_by(Product.sku))
+    products_by_sku = {p.sku: p for p in products_result.scalars().all()}
+    warehouses_by_name = {wh.name: wh for wh in warehouses}
+
+    now = datetime.datetime.now(datetime.UTC)
+    created = 0
+    for spec in TRANSFER_SPECS:
+        product = products_by_sku.get(spec["sku"])
+        from_wh = warehouses_by_name.get(spec["from_wh"])
+        to_wh = warehouses_by_name.get(spec["to_wh"])
+        if not product or not from_wh or not to_wh:
+            print(f"  ✗ Skipping transfer – missing reference for: {spec['sku']}")
+            continue
+
+        ts = now - datetime.timedelta(days=spec["days_ago"])
+        transfer = StockTransfer(
+            id=uuid.uuid4(),
+            product_id=product.id,
+            from_warehouse_id=from_wh.id,
+            to_warehouse_id=to_wh.id,
+            quantity=spec["qty"],
+            initiated_by=admin_user.id,
+            notes=spec["notes"],
+            created_at=ts,
+            updated_at=ts,
+        )
+        session.add(transfer)
+        created += 1
+
+    await session.flush()
+    print(f"  ✓ Created {created} stock transfers")
+
+
+async def seed_audit_logs(
+    session: AsyncSession,
+    admin_user: User,
+    warehouses: list[Warehouse],
+) -> None:
+    """Create 50 audit log entries with realistic timestamps and JSONB diffs, idempotent by count."""
+    count_result = await session.execute(
+        select(func.count(AuditLog.id)).where(AuditLog.user_id == admin_user.id)
+    )
+    if (count_result.scalar() or 0) >= 50:
+        print("  ✓ Audit log entries already seeded")
+        return
+
+    products_result = await session.execute(select(Product).order_by(Product.sku))
+    products = list(products_result.scalars().all())
+
+    categories_result = await session.execute(
+        select(Category).where(Category.parent_id.isnot(None)).order_by(Category.name)
+    )
+    categories = list(categories_result.scalars().all())
+
+    now = datetime.datetime.now(datetime.UTC)
+    entries: list[AuditLog] = []
+
+    def log(
+        action: str,
+        resource_type: str,
+        resource_id: uuid.UUID,
+        changes: dict[str, object],
+        days_ago: int,
+        ip: str = "10.0.1.10",
+    ) -> AuditLog:
+        ts = now - datetime.timedelta(days=days_ago)
+        return AuditLog(
+            id=uuid.uuid4(),
+            user_id=admin_user.id,
+            action=action,
+            resource_type=resource_type,
+            resource_id=resource_id,
+            changes=changes,
+            ip_address=ip,
+            created_at=ts,
+            updated_at=ts,
+        )
+
+    # 10 product creates (days 89→71)
+    for i, p in enumerate(products[:10]):
+        entries.append(
+            log(
+                "create",
+                "product",
+                p.id,
+                {
+                    "created": {
+                        "name": p.name,
+                        "sku": p.sku,
+                        "price": str(p.price),
+                        "is_active": True,
+                    }
+                },
+                days_ago=89 - i * 2,
+                ip="10.0.1.15",
+            )
+        )
+
+    # 10 product price updates (days 70→52)
+    for i, p in enumerate(products[10:20]):
+        old = round(float(p.price) * 0.92, 2)
+        entries.append(
+            log(
+                "update",
+                "product",
+                p.id,
+                {"before": {"price": f"{old:.2f}"}, "after": {"price": str(p.price)}},
+                days_ago=70 - i * 2,
+                ip="10.0.2.5",
+            )
+        )
+
+    # 5 product status updates (days 50→46)
+    for i, p in enumerate(products[20:25]):
+        entries.append(
+            log(
+                "update",
+                "product",
+                p.id,
+                {"before": {"is_active": not p.is_active}, "after": {"is_active": p.is_active}},
+                days_ago=50 - i,
+                ip="10.0.1.20",
+            )
+        )
+
+    # 3 warehouse creates (days 120, 115, 110)
+    for i, wh in enumerate(warehouses):
+        entries.append(
+            log(
+                "create",
+                "warehouse",
+                wh.id,
+                {
+                    "created": {
+                        "name": wh.name,
+                        "location": wh.location,
+                        "capacity": wh.capacity,
+                        "is_active": True,
+                    }
+                },
+                days_ago=120 - i * 5,
+                ip="192.168.1.1",
+            )
+        )
+
+    # 4 warehouse capacity updates (days 95→80)
+    wh_cap_updates: list[tuple[Warehouse, int, int, int]] = [
+        (warehouses[0], 9000, 10000, 95),
+        (warehouses[1], 7500, 8000, 90),
+        (warehouses[2], 11000, 12000, 85),
+        (warehouses[0], 9500, 9000, 80),
+    ]
+    for wh, old_cap, new_cap, d in wh_cap_updates:
+        entries.append(
+            log(
+                "update",
+                "warehouse",
+                wh.id,
+                {"before": {"capacity": old_cap}, "after": {"capacity": new_cap}},
+                days_ago=d,
+                ip="192.168.1.1",
+            )
+        )
+
+    # 6 stock level quantity updates (days 45→25)
+    for i, p in enumerate(products[30:36]):
+        old_qty = 30 + i * 15
+        new_qty = old_qty + 25 + i * 5
+        entries.append(
+            log(
+                "update",
+                "stock_level",
+                p.id,
+                {
+                    "before": {"quantity": old_qty, "min_threshold": 10},
+                    "after": {"quantity": new_qty, "min_threshold": 10 + i},
+                },
+                days_ago=45 - i * 4,
+                ip="10.0.1.10",
+            )
+        )
+
+    # 5 stock transfer audit entries (days 25→5)
+    transfer_refs: list[tuple[Product, Warehouse, Warehouse, int]] = [
+        (products[36], warehouses[0], warehouses[1], 20),
+        (products[37], warehouses[1], warehouses[2], 15),
+        (products[38], warehouses[2], warehouses[0], 30),
+        (products[39], warehouses[0], warehouses[2], 10),
+        (products[40], warehouses[1], warehouses[0], 25),
+    ]
+    for i, (p, from_wh, to_wh, qty) in enumerate(transfer_refs):
+        entries.append(
+            log(
+                "transfer",
+                "stock_transfer",
+                p.id,
+                {
+                    "transferred": {
+                        "product_sku": p.sku,
+                        "from_warehouse": from_wh.name,
+                        "to_warehouse": to_wh.name,
+                        "quantity": qty,
+                    }
+                },
+                days_ago=25 - i * 5,
+                ip="10.0.1.10",
+            )
+        )
+
+    # 5 category description updates (days 110→90)
+    for i, cat in enumerate(categories[:5]):
+        entries.append(
+            log(
+                "update",
+                "category",
+                cat.id,
+                {"before": {"description": None}, "after": {"description": cat.description}},
+                days_ago=110 - i * 5,
+                ip="10.0.2.1",
+            )
+        )
+
+    # 2 product delete audit entries (days 40, 38)
+    for i, p in enumerate(products[48:50]):
+        entries.append(
+            log(
+                "delete",
+                "product",
+                p.id,
+                {"deleted": {"name": p.name, "sku": p.sku, "reason": "Product line discontinued"}},
+                days_ago=40 - i * 2,
+                ip="10.0.1.15",
+            )
+        )
+
+    # Total: 10+10+5+3+4+6+5+5+2 = 50
+    for entry in entries:
+        session.add(entry)
+
+    await session.flush()
+    print(f"  ✓ Created {len(entries)} audit log entries")
 
 
 # ---------------------------------------------------------------------------
@@ -906,16 +1438,27 @@ async def main() -> None:
         expire_on_commit=False,
     )
 
-    async with session_factory() as session:
-        async with session.begin():
-            print("\n[1/3] Seeding admin user...")
-            await seed_admin_user(session)
+    async with session_factory() as session, session.begin():
+        print("\n[1/7] Seeding admin user...")
+        admin_user = await seed_admin_user(session)
 
-            print("\n[2/3] Seeding categories...")
-            category_map = await seed_categories(session)
+        print("\n[2/7] Seeding categories...")
+        category_map = await seed_categories(session)
 
-            print("\n[3/3] Seeding products...")
-            await seed_products(session, category_map)
+        print("\n[3/7] Seeding products...")
+        await seed_products(session, category_map)
+
+        print("\n[4/7] Seeding warehouses...")
+        warehouses = await seed_warehouses(session)
+
+        print("\n[5/7] Seeding stock levels...")
+        await seed_stock_levels(session, warehouses)
+
+        print("\n[6/7] Seeding stock transfers...")
+        await seed_transfers(session, admin_user, warehouses)
+
+        print("\n[7/7] Seeding audit logs...")
+        await seed_audit_logs(session, admin_user, warehouses)
 
     await engine.dispose()
     print("\n✓ Seed complete!")
