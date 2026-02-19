@@ -4,14 +4,45 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from src.schemas.category import CategoryResponse
 
+_EXAMPLE_PRODUCT_ID = "2a3b4c5d-6e7f-8a9b-0c1d-2e3f4a5b6c7d"
+_EXAMPLE_CATEGORY_ID = "7f3e1b2a-8c4d-4e5f-9a6b-1c2d3e4f5a6b"
+_EXAMPLE_WAREHOUSE_ID = "c9d8e7f6-a5b4-3c2d-1e0f-9a8b7c6d5e4f"
+_EXAMPLE_TS = "2026-01-10T08:00:00Z"
+_EXAMPLE_CATEGORY: dict[str, Any] = {
+    "id": _EXAMPLE_CATEGORY_ID,
+    "name": "Electronics",
+    "description": "Consumer electronics and accessories",
+    "parent_id": None,
+    "created_at": "2026-01-01T00:00:00Z",
+    "updated_at": "2026-01-01T00:00:00Z",
+}
+
 
 class ProductCreate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "name": "ProMax Smartphone X12",
+                "sku": "ELEC-MON-001",
+                "description": (
+                    "A flagship smartphone featuring a 6.7-inch AMOLED display and 108MP camera. "
+                    "Built for professionals who need performance on the go. "
+                    "Includes organic glass back and 5G connectivity."
+                ),
+                "price": "999.99",
+                "weight_kg": "0.185",
+                "category_id": _EXAMPLE_CATEGORY_ID,
+                "is_active": True,
+            }
+        }
+    )
+
     name: str = Field(..., max_length=200)
     sku: str = Field(..., max_length=50)
     description: str | None = None
@@ -22,6 +53,18 @@ class ProductCreate(BaseModel):
 
 
 class ProductUpdate(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "price": "899.99",
+                "description": (
+                    "Updated: now includes wireless charging pad and extended warranty. "
+                    "Ideal for running shoes enthusiasts who also need a powerful device."
+                ),
+            }
+        }
+    )
+
     name: str | None = Field(None, max_length=200)
     sku: str | None = Field(None, max_length=50)
     description: str | None = None
@@ -32,7 +75,26 @@ class ProductUpdate(BaseModel):
 
 
 class ProductResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": _EXAMPLE_PRODUCT_ID,
+                "name": "ProMax Smartphone X12",
+                "sku": "ELEC-MON-001",
+                "description": (
+                    "A flagship smartphone featuring a 6.7-inch AMOLED display and 108MP camera."
+                ),
+                "price": "999.99",
+                "weight_kg": "0.185",
+                "category_id": _EXAMPLE_CATEGORY_ID,
+                "is_active": True,
+                "created_at": _EXAMPLE_TS,
+                "updated_at": _EXAMPLE_TS,
+                "category": _EXAMPLE_CATEGORY,
+            }
+        },
+    )
 
     id: uuid.UUID
     name: str
@@ -50,7 +112,16 @@ class ProductResponse(BaseModel):
 class WarehouseStockInfo(BaseModel):
     """Warehouse info embedded in stock level response."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": _EXAMPLE_WAREHOUSE_ID,
+                "name": "East Coast Hub",
+                "location": "New York, NY",
+            }
+        },
+    )
 
     id: uuid.UUID
     name: str
@@ -60,7 +131,21 @@ class WarehouseStockInfo(BaseModel):
 class ProductStockLevel(BaseModel):
     """Stock level entry with warehouse info for product detail response."""
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "warehouse_id": _EXAMPLE_WAREHOUSE_ID,
+                "quantity": 142,
+                "min_threshold": 20,
+                "warehouse": {
+                    "id": _EXAMPLE_WAREHOUSE_ID,
+                    "name": "East Coast Hub",
+                    "location": "New York, NY",
+                },
+            }
+        },
+    )
 
     warehouse_id: uuid.UUID
     quantity: int
@@ -70,6 +155,39 @@ class ProductStockLevel(BaseModel):
 
 class ProductDetailResponse(ProductResponse):
     """ProductResponse extended with per-warehouse stock levels."""
+
+    model_config = ConfigDict(
+        from_attributes=True,
+        json_schema_extra={
+            "example": {
+                "id": _EXAMPLE_PRODUCT_ID,
+                "name": "ProMax Smartphone X12",
+                "sku": "ELEC-MON-001",
+                "description": (
+                    "A flagship smartphone featuring a 6.7-inch AMOLED display and 108MP camera."
+                ),
+                "price": "999.99",
+                "weight_kg": "0.185",
+                "category_id": _EXAMPLE_CATEGORY_ID,
+                "is_active": True,
+                "created_at": _EXAMPLE_TS,
+                "updated_at": _EXAMPLE_TS,
+                "category": _EXAMPLE_CATEGORY,
+                "stock_levels": [
+                    {
+                        "warehouse_id": _EXAMPLE_WAREHOUSE_ID,
+                        "quantity": 142,
+                        "min_threshold": 20,
+                        "warehouse": {
+                            "id": _EXAMPLE_WAREHOUSE_ID,
+                            "name": "East Coast Hub",
+                            "location": "New York, NY",
+                        },
+                    }
+                ],
+            }
+        },
+    )
 
     stock_levels: list[ProductStockLevel] = []
 
