@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: shipapi_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy src --strict
+
+      - name: Test
+        env:
+          DB_PORT: "5432"
+          DB_USER: test
+          DB_PASSWORD: test
+          DB_ADMIN_DB: postgres
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/shipapi_test
+          DATABASE_URL_DIRECT: postgresql+asyncpg://test:test@localhost:5432/shipapi_test
+          JWT_SECRET_KEY: test-secret-key-for-ci-only
+        run: uv run pytest tests/ -v --cov=src --cov-report=term-missing --cov-fail-under=80
