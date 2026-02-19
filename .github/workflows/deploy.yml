@@ -1,0 +1,47 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SVC_ID: ${{ secrets.RAILWAY_SVC_ID }}
+        run: railway up --service "$RAILWAY_SVC_ID"
+
+      - name: Smoke test
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SVC_ID: ${{ secrets.RAILWAY_SVC_ID }}
+        run: |
+          SERVICE_URL=$(railway domain --service "$RAILWAY_SVC_ID" | tr -d '[:space:]')
+          [[ "$SERVICE_URL" == http* ]] || SERVICE_URL="https://$SERVICE_URL"
+          echo "Smoke testing: $SERVICE_URL"
+
+          sleep 60
+
+          for attempt in $(seq 1 5); do
+            echo "Attempt $attempt/5..."
+            if curl -f "$SERVICE_URL/api/v1/health" \
+               && curl -f "$SERVICE_URL/docs" \
+               && curl -f "$SERVICE_URL/redoc"; then
+              echo "All smoke tests passed!"
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              echo "Retrying in 30s..."
+              sleep 30
+            fi
+          done
+
+          echo "Smoke tests failed after 5 attempts"
+          exit 1
