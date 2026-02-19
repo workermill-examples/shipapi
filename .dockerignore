@@ -1,0 +1,58 @@
+# Version control
+.git
+.gitignore
+
+# Python virtual environments and bytecode
+.venv
+venv
+env
+ENV
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+
+# Environment files — keep .env.example, exclude secrets
+.env
+.env.local
+.env.*.local
+
+# Tests
+tests/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Linting and type checking caches
+.ruff_cache/
+.mypy_cache/
+
+# Documentation / markdown
+*.md
+README*
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker Compose (not needed inside image)
+docker-compose.yml
+docker-compose.override.yml
+
+# uv cache (deps installed via mount cache in build)
+.uv/
