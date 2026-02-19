@@ -13,7 +13,7 @@ from sqlalchemy.orm import selectinload
 from src.dependencies import get_current_user, get_db, require_admin
 from src.models import Product, StockLevel, User
 from src.schemas.category import CategoryResponse
-from src.schemas.common import PaginatedResponse
+from src.schemas.common import ErrorResponse, PaginatedResponse
 from src.schemas.product import (
     ProductCreate,
     ProductDetailResponse,
@@ -43,7 +43,13 @@ def _serialize_value(value: Any) -> Any:
     return value
 
 
-@router.get("", response_model=PaginatedResponse[ProductResponse])
+@router.get(
+    "",
+    response_model=PaginatedResponse[ProductResponse],
+    responses={
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def list_products(
     params: ProductListParams = Depends(),  # noqa: B008
     db: AsyncSession = Depends(get_db),  # noqa: B008
@@ -82,7 +88,16 @@ async def list_products(
     return await paginate(db, query, params.page, params.per_page, ProductResponse)
 
 
-@router.post("", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=ProductResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid category_id or duplicate SKU"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def create_product(
     body: ProductCreate,
     request: Request,
@@ -92,7 +107,7 @@ async def create_product(
     """Create a new product.  Requires authentication.
 
     Returns 400 if ``category_id`` references a non-existent category.
-    Returns 409 if the SKU is already in use.
+    Returns 400 if the SKU is already in use.
     """
     product = Product(
         name=body.name,
@@ -141,7 +156,14 @@ async def create_product(
     return ProductResponse.model_validate(result.scalar_one())
 
 
-@router.get("/{product_id}", response_model=ProductDetailResponse)
+@router.get(
+    "/{product_id}",
+    response_model=ProductDetailResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Product not found"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def get_product(
     product_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),  # noqa: B008
@@ -178,7 +200,16 @@ async def get_product(
     )
 
 
-@router.put("/{product_id}", response_model=ProductResponse)
+@router.put(
+    "/{product_id}",
+    response_model=ProductResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid category_id or SKU already in use"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        404: {"model": ErrorResponse, "description": "Product not found"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def update_product(
     product_id: uuid.UUID,
     body: ProductUpdate,
@@ -237,7 +268,15 @@ async def update_product(
     return ProductResponse.model_validate(result.scalar_one())
 
 
-@router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{product_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin role required"},
+        404: {"model": ErrorResponse, "description": "Product not found"},
+    },
+)
 async def delete_product(
     product_id: uuid.UUID,
     request: Request,
