@@ -12,11 +12,13 @@ from src.dependencies import get_current_user, get_db
 from src.models import User
 from src.schemas.common import ErrorResponse, PaginatedResponse, Pagination
 from src.schemas.stock import (
+    ProductSummary,
     StockAlertResponse,
     StockLevelResponse,
     StockUpdateRequest,
     TransferRequest,
     TransferResponse,
+    WarehouseSummary,
 )
 from src.services.stock import get_stock_alerts, transfer_stock, upsert_stock_level
 
@@ -106,8 +108,8 @@ async def list_stock_alerts(
     total_pages = math.ceil(total / q.per_page) if q.per_page > 0 else 0
     alerts = [
         StockAlertResponse(
-            product=stock.product,
-            warehouse=stock.warehouse,
+            product=ProductSummary.model_validate(stock.product),
+            warehouse=WarehouseSummary.model_validate(stock.warehouse),
             quantity=stock.quantity,
             min_threshold=stock.min_threshold,
             deficit=stock.min_threshold - stock.quantity,

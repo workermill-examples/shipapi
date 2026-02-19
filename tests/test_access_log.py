@@ -70,9 +70,7 @@ class TestAccessLogEmission:
         records = [r for r in caplog.records if r.name == "src.middleware.access_log"]
         assert len(records) >= 1
 
-    def test_log_level_is_info(
-        self, client: TestClient, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_log_level_is_info(self, client: TestClient, caplog: pytest.LogCaptureFixture) -> None:
         caplog.clear()
         with caplog.at_level(logging.INFO, logger="src.middleware.access_log"):
             client.get("/ping")
@@ -86,9 +84,7 @@ class TestAccessLogEmission:
 
 
 class TestAccessLogFormat:
-    def test_log_is_valid_json(
-        self, client: TestClient, caplog: pytest.LogCaptureFixture
-    ) -> None:
+    def test_log_is_valid_json(self, client: TestClient, caplog: pytest.LogCaptureFixture) -> None:
         caplog.clear()
         with caplog.at_level(logging.INFO, logger="src.middleware.access_log"):
             client.get("/ping")

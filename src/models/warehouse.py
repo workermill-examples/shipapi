@@ -1,15 +1,17 @@
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, CheckConstraint, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base, TimestampMixin, UUIDMixin
 
+if TYPE_CHECKING:
+    from src.models.stock_level import StockLevel
+
 
 class Warehouse(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "warehouses"
-    __table_args__ = (
-        CheckConstraint("capacity > 0", name="ck_warehouses_capacity_positive"),
-    )
+    __table_args__ = (CheckConstraint("capacity > 0", name="ck_warehouses_capacity_positive"),)
 
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     location: Mapped[str] = mapped_column(String(200), nullable=False)

@@ -117,9 +117,7 @@ def get_user_key(request: Request) -> str:
     return get_remote_address(request)
 
 
-async def rate_limit_exceeded_handler(
-    request: Request, exc: RateLimitExceeded
-) -> Response:
+async def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
     """Return 429 with the standard error envelope when a rate limit is exceeded.
 
     ``X-RateLimit-*`` and ``Retry-After`` headers are injected by calling

@@ -1,11 +1,15 @@
 import uuid
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, CheckConstraint, Computed, ForeignKey, Index, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import TSVECTOR
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from src.models.category import Category
 
 
 class Product(UUIDMixin, TimestampMixin, Base):

@@ -41,13 +41,11 @@ _DB_PASSWORD = os.getenv("DB_PASSWORD", "localdev")
 _DB_ADMIN_DB = os.getenv("DB_ADMIN_DB", "workermill")
 
 _TEST_DB_URL = (
-    f"postgresql+asyncpg://{_DB_USER}:{_DB_PASSWORD}"
-    f"@{_DB_HOST}:{_DB_PORT}/{_TEST_DB_NAME}"
+    f"postgresql+asyncpg://{_DB_USER}:{_DB_PASSWORD}@{_DB_HOST}:{_DB_PORT}/{_TEST_DB_NAME}"
 )
 # Plain asyncpg URL (no "+asyncpg" driver qualifier) used for admin connections.
 _TEST_ADMIN_CONN_URL = (
-    f"postgresql://{_DB_USER}:{_DB_PASSWORD}"
-    f"@{_DB_HOST}:{_DB_PORT}/{_DB_ADMIN_DB}"
+    f"postgresql://{_DB_USER}:{_DB_PASSWORD}@{_DB_HOST}:{_DB_PORT}/{_DB_ADMIN_DB}"
 )
 
 # ---------------------------------------------------------------------------
@@ -85,7 +83,7 @@ def reset_rate_limiter() -> None:
 
 
 @pytest.fixture(scope="session")
-def test_db() -> Generator[str, None, None]:
+def test_db() -> Generator[str]:
     """Create ``shipapi_test``, run Alembic migrations, yield the URL.
 
     Uses :func:`asyncio.run` for DB admin operations so this synchronous
@@ -142,7 +140,7 @@ def test_db() -> Generator[str, None, None]:
 
 
 @pytest.fixture
-async def async_client(test_db: str) -> AsyncGenerator[AsyncClient, None]:  # noqa: ARG001
+async def async_client(test_db: str) -> AsyncGenerator[AsyncClient]:  # noqa: ARG001
     """httpx.AsyncClient that drives the full FastAPI app in-process.
 
     The ASGI lifespan (engine connection verification) fires on context entry
@@ -151,9 +149,7 @@ async def async_client(test_db: str) -> AsyncGenerator[AsyncClient, None]:  # no
     """
     from src.main import app
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         yield client
 
 
@@ -227,7 +223,7 @@ async def admin_headers(async_client: AsyncClient) -> dict[str, str]:
 
 
 @pytest.fixture
-async def seeded_db(async_client: AsyncClient) -> AsyncGenerator[dict[str, Any], None]:
+async def seeded_db(async_client: AsyncClient) -> AsyncGenerator[dict[str, Any]]:
     """Truncate all tables and populate with representative seed data.
 
     Returns a mapping with created resource IDs, credentials, and auth
