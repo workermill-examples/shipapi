@@ -15,10 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: List services
+      - name: Debug services
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway service list || true
+        run: |
+          railway status || true
+          railway service || true
+          railway --help 2>&1 | head -30 || true
 
       - name: Deploy to Railway
         env:
