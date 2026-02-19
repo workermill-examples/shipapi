@@ -20,21 +20,20 @@ jobs:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service shipapi --detach
 
+  smoke-test:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for deployment
+        run: sleep 120
+
       - name: Smoke test
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          SERVICE_URL=$(railway domain --service shipapi | tr -d '[:space:]')
-          [[ "$SERVICE_URL" == http* ]] || SERVICE_URL="https://$SERVICE_URL"
-          echo "Smoke testing: $SERVICE_URL"
-
-          sleep 60
-
           for attempt in $(seq 1 5); do
             echo "Attempt $attempt/5..."
-            if curl -f "$SERVICE_URL/api/v1/health" \
-               && curl -f "$SERVICE_URL/docs" \
-               && curl -f "$SERVICE_URL/redoc"; then
+            if curl -sf "https://shipapi.up.railway.app/api/v1/health" \
+               && curl -sf "https://shipapi.up.railway.app/docs" \
+               && curl -sf "https://shipapi.up.railway.app/redoc"; then
               echo "All smoke tests passed!"
               exit 0
             fi
