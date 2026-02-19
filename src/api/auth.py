@@ -20,6 +20,7 @@ from src.schemas.auth import (
     TokenResponse,
     UserResponse,
 )
+from src.schemas.common import ErrorResponse
 from src.services.auth import (
     create_access_token,
     create_refresh_token,
@@ -45,7 +46,16 @@ _INVALID_REFRESH = HTTPException(
 )
 
 
-@router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=RegisterResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        409: {"model": ErrorResponse, "description": "Email already registered"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+    },
+)
 @limiter.limit("5/minute")
 async def register(
     request: Request,
@@ -87,7 +97,15 @@ async def register(
     )
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid email or password"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+    },
+)
 @limiter.limit("10/minute")
 async def login(
     request: Request,
@@ -121,7 +139,15 @@ async def login(
     )
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Invalid or expired refresh token"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+    },
+)
 @limiter.limit("30/minute")
 async def refresh(
     request: Request,
@@ -163,7 +189,14 @@ async def refresh(
     )
 
 
-@router.get("/me", response_model=UserResponse)
+@router.get(
+    "/me",
+    response_model=UserResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        429: {"model": ErrorResponse, "description": "Rate limit exceeded"},
+    },
+)
 @limiter.limit("100/minute", key_func=get_user_key)
 async def me(
     request: Request,

@@ -16,8 +16,17 @@ __all__ = ["get_db", "get_current_user", "require_admin"]
 
 # Security scheme extractors registered in the OpenAPI spec so Swagger UI shows
 # the "Authorize" button with both Bearer-token and API-key options.
-_bearer_scheme = HTTPBearer(auto_error=False)
-_api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+_bearer_scheme = HTTPBearer(
+    scheme_name="BearerAuth",
+    description="JWT access token. Obtain one via **POST /api/v1/auth/login**, then paste the `access_token` value here.",
+    auto_error=False,
+)
+_api_key_header = APIKeyHeader(
+    name="X-API-Key",
+    scheme_name="ApiKeyAuth",
+    description="API key issued at registration (returned once in the `api_key` field). Demo key: `sk_demo_shipapi_2026_showcase_key`.",
+    auto_error=False,
+)
 
 _CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,

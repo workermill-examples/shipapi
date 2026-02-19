@@ -17,7 +17,7 @@ from src.schemas.category import (
     CategoryResponse,
     CategoryUpdate,
 )
-from src.schemas.common import PaginatedResponse
+from src.schemas.common import ErrorResponse, PaginatedResponse
 from src.services.audit import record_audit
 from src.utils.pagination import paginate
 
@@ -36,7 +36,13 @@ def _serialize_value(value: Any) -> Any:
     return value
 
 
-@router.get("", response_model=PaginatedResponse[CategoryResponse])
+@router.get(
+    "",
+    response_model=PaginatedResponse[CategoryResponse],
+    responses={
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def list_categories(
     page: int = Query(1, ge=1),  # noqa: B008
     per_page: int = Query(20, ge=1, le=100),  # noqa: B008
@@ -50,7 +56,17 @@ async def list_categories(
     return await paginate(db, query, page, per_page, CategoryResponse)
 
 
-@router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=CategoryResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid parent_id"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin role required"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def create_category(
     body: CategoryCreate,
     request: Request,
@@ -96,7 +112,14 @@ async def create_category(
     return CategoryResponse.model_validate(category)
 
 
-@router.get("/{category_id}", response_model=CategoryDetailResponse)
+@router.get(
+    "/{category_id}",
+    response_model=CategoryDetailResponse,
+    responses={
+        404: {"model": ErrorResponse, "description": "Category not found"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def get_category(
     category_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),  # noqa: B008
@@ -111,7 +134,17 @@ async def get_category(
     return CategoryDetailResponse.model_validate(category)
 
 
-@router.put("/{category_id}", response_model=CategoryResponse)
+@router.put(
+    "/{category_id}",
+    response_model=CategoryResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Invalid parent_id"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin role required"},
+        404: {"model": ErrorResponse, "description": "Category not found"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def update_category(
     category_id: uuid.UUID,
     body: CategoryUpdate,
@@ -165,7 +198,16 @@ async def update_category(
     return CategoryResponse.model_validate(category)
 
 
-@router.delete("/{category_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{category_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        400: {"model": ErrorResponse, "description": "Category still has products assigned"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin role required"},
+        404: {"model": ErrorResponse, "description": "Category not found"},
+    },
+)
 async def delete_category(
     category_id: uuid.UUID,
     request: Request,
