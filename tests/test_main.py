@@ -70,3 +70,64 @@ async def test_cors_allow_origin_header(client):
     # CORS middleware echoes the requesting origin (or "*") when origins are allowed
     assert "access-control-allow-origin" in response.headers
     assert response.headers["access-control-allow-origin"] in ("*", "http://example.com")
+
+
+# ---------------------------------------------------------------------------
+# Swagger UI — security scheme verification (Authorize button)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_openapi_has_bearer_auth_scheme(client):
+    """BearerAuth security scheme must appear in the OpenAPI spec so Swagger UI
+    renders the Bearer JWT option inside the Authorize button."""
+    response = await client.get("/openapi.json")
+    schemes = response.json().get("components", {}).get("securitySchemes", {})
+    assert "BearerAuth" in schemes, f"BearerAuth missing from securitySchemes: {list(schemes)}"
+    bearer = schemes["BearerAuth"]
+    assert bearer["type"] == "http"
+    assert bearer["scheme"] == "bearer"
+
+
+@pytest.mark.asyncio
+async def test_openapi_has_api_key_auth_scheme(client):
+    """ApiKeyAuth security scheme must appear in the OpenAPI spec so Swagger UI
+    renders the X-API-Key option inside the Authorize button."""
+    response = await client.get("/openapi.json")
+    schemes = response.json().get("components", {}).get("securitySchemes", {})
+    assert "ApiKeyAuth" in schemes, f"ApiKeyAuth missing from securitySchemes: {list(schemes)}"
+    api_key = schemes["ApiKeyAuth"]
+    assert api_key["type"] == "apiKey"
+    assert api_key["in"] == "header"
+    assert api_key["name"] == "X-API-Key"
+
+
+@pytest.mark.asyncio
+async def test_protected_endpoints_declare_both_security_schemes(client):
+    """Every endpoint that requires authentication must declare both BearerAuth
+    and ApiKeyAuth in its security array so Swagger UI shows the correct lock
+    icon and the Authorize button pre-selects both schemes."""
+    response = await client.get("/openapi.json")
+    schema = response.json()
+    paths = schema.get("paths", {})
+
+    # Collect all operations that require auth (they reference get_current_user)
+    # by checking that their security field lists both schemes.
+    auth_required_paths: list[str] = []
+    for path, path_item in paths.items():
+        for method, operation in path_item.items():
+            security: list[dict] | None = operation.get("security")
+            if security is not None:
+                auth_required_paths.append(f"{method.upper()} {path}")
+                scheme_names = {name for entry in security for name in entry}
+                assert "BearerAuth" in scheme_names, (
+                    f"{method.upper()} {path}: BearerAuth missing from security {security}"
+                )
+                assert "ApiKeyAuth" in scheme_names, (
+                    f"{method.upper()} {path}: ApiKeyAuth missing from security {security}"
+                )
+
+    # At least /api/v1/auth/me must require auth
+    assert any("/auth/me" in p for p in auth_required_paths), (
+        "Expected GET /api/v1/auth/me to declare security requirements"
+    )
