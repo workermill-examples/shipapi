@@ -13,7 +13,7 @@ from src.dependencies import get_current_user, get_db, require_admin
 from src.models import User
 from src.models.audit_log import AuditLog
 from src.models.warehouse import Warehouse
-from src.schemas.common import PaginatedResponse, Pagination
+from src.schemas.common import ErrorResponse, PaginatedResponse, Pagination
 from src.schemas.stock import StockLevelResponse
 from src.schemas.warehouse import (
     WarehouseCreate,
@@ -31,7 +31,13 @@ class _PaginationQuery(BaseModel):
     per_page: int = 20
 
 
-@router.get("", response_model=PaginatedResponse[WarehouseResponse])
+@router.get(
+    "",
+    response_model=PaginatedResponse[WarehouseResponse],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+    },
+)
 async def list_warehouses(
     q: Annotated[_PaginationQuery, Depends()],
     current_user: Annotated[User, Depends(get_current_user)],
@@ -56,7 +62,16 @@ async def list_warehouses(
     )
 
 
-@router.post("", response_model=WarehouseResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=WarehouseResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin role required"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def create_warehouse(
     body: WarehouseCreate,
     request: Request,
@@ -86,7 +101,14 @@ async def create_warehouse(
     return WarehouseResponse.model_validate(warehouse)
 
 
-@router.get("/{warehouse_id}", response_model=WarehouseDetailResponse)
+@router.get(
+    "/{warehouse_id}",
+    response_model=WarehouseDetailResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        404: {"model": ErrorResponse, "description": "Warehouse not found"},
+    },
+)
 async def get_warehouse(
     warehouse_id: uuid.UUID,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -116,7 +138,16 @@ async def get_warehouse(
     )
 
 
-@router.put("/{warehouse_id}", response_model=WarehouseResponse)
+@router.put(
+    "/{warehouse_id}",
+    response_model=WarehouseResponse,
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        403: {"model": ErrorResponse, "description": "Admin role required"},
+        404: {"model": ErrorResponse, "description": "Warehouse not found"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def update_warehouse(
     warehouse_id: uuid.UUID,
     body: WarehouseUpdate,
@@ -160,7 +191,14 @@ async def update_warehouse(
     return WarehouseResponse.model_validate(warehouse)
 
 
-@router.get("/{warehouse_id}/stock", response_model=PaginatedResponse[StockLevelResponse])
+@router.get(
+    "/{warehouse_id}/stock",
+    response_model=PaginatedResponse[StockLevelResponse],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        404: {"model": ErrorResponse, "description": "Warehouse not found"},
+    },
+)
 async def list_warehouse_stock_levels(
     warehouse_id: uuid.UUID,
     q: Annotated[_PaginationQuery, Depends()],

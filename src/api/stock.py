@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.dependencies import get_current_user, get_db
 from src.models import User
-from src.schemas.common import PaginatedResponse, Pagination
+from src.schemas.common import ErrorResponse, PaginatedResponse, Pagination
 from src.schemas.stock import (
     StockAlertResponse,
     StockLevelResponse,
@@ -28,7 +28,17 @@ class _PaginationQuery(BaseModel):
     per_page: int = 20
 
 
-@router.put("/{product_id}/{warehouse_id}", response_model=StockLevelResponse)
+@router.put(
+    "/{product_id}/{warehouse_id}",
+    response_model=StockLevelResponse,
+    responses={
+        400: {"model": ErrorResponse, "description": "Warehouse is not active"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        404: {"model": ErrorResponse, "description": "Product or warehouse not found"},
+        409: {"model": ErrorResponse, "description": "Concurrent update conflict — retry"},
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def update_stock_level(
     product_id: uuid.UUID,
     warehouse_id: uuid.UUID,
@@ -49,7 +59,20 @@ async def update_stock_level(
     return StockLevelResponse.model_validate(stock_level)
 
 
-@router.post("/transfer", response_model=TransferResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/transfer",
+    response_model=TransferResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        400: {"model": ErrorResponse, "description": "Insufficient stock in source warehouse"},
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+        404: {
+            "model": ErrorResponse,
+            "description": "Product or source/destination warehouse not found or inactive",
+        },
+        422: {"model": ErrorResponse, "description": "Request validation failed"},
+    },
+)
 async def create_transfer(
     body: TransferRequest,
     request: Request,
@@ -66,7 +89,13 @@ async def create_transfer(
     return TransferResponse.model_validate(transfer)
 
 
-@router.get("/alerts", response_model=PaginatedResponse[StockAlertResponse])
+@router.get(
+    "/alerts",
+    response_model=PaginatedResponse[StockAlertResponse],
+    responses={
+        401: {"model": ErrorResponse, "description": "Not authenticated"},
+    },
+)
 async def list_stock_alerts(
     q: Annotated[_PaginationQuery, Depends()],
     current_user: Annotated[User, Depends(get_current_user)],
