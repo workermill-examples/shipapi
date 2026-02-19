@@ -3,6 +3,8 @@
 Provides two public async functions:
 - ``record_audit_log`` — called from any write endpoint to persist an audit entry.
 - ``list_audit_logs`` — paginated, filtered read used by the admin audit endpoint.
+
+``record_audit`` is an alias for ``record_audit_log`` used by API endpoint modules.
 """
 
 import uuid
@@ -89,3 +91,7 @@ async def list_audit_logs(
     logs: list[AuditLog] = list(result.scalars().all())
 
     return logs, total
+
+
+# Alias used by API endpoint modules (categories, products, etc.)
+record_audit = record_audit_log
