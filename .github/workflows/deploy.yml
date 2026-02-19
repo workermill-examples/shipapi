@@ -15,27 +15,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Debug project
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          railway status
-          echo "---"
-          railway list || true
-          echo "---"
-          railway up --help 2>&1 | head -20 || true
-
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up
+        run: railway up --service shipapi --detach
 
       - name: Smoke test
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          SVC_ID: ${{ secrets.RAILWAY_SVC_ID }}
         run: |
-          SERVICE_URL=$(railway domain --service "$SVC_ID" | tr -d '[:space:]')
+          SERVICE_URL=$(railway domain --service shipapi | tr -d '[:space:]')
           [[ "$SERVICE_URL" == http* ]] || SERVICE_URL="https://$SERVICE_URL"
           echo "Smoke testing: $SERVICE_URL"
 
