@@ -1,23 +1,15 @@
-"""Audit recording service.
-
-Provides two public async functions:
-- ``record_audit_log`` — called from any write endpoint to persist an audit entry.
-- ``list_audit_logs`` — paginated, filtered read used by the admin audit endpoint.
-"""
+"""Audit recording service: persists audit log entries for all write operations."""
 
 import uuid
 from typing import Any
 
-from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.models.audit_log import AuditLog
-from src.schemas.audit import AuditLogQuery
 
 
-async def record_audit_log(
+async def record_audit(
     db: AsyncSession,
-    *,
     user_id: uuid.UUID,
     action: str,
     resource_type: str,
@@ -25,13 +17,30 @@ async def record_audit_log(
     changes: dict[str, Any] | None = None,
     ip_address: str | None = None,
 ) -> AuditLog:
-    """Create and persist an ``AuditLog`` record.
+    """Create and flush an :class:`AuditLog` entry without committing.
 
-    Designed to be called explicitly from any write endpoint after the primary
-    mutation has been committed.  Commits its own transaction and refreshes
-    the returned instance.
+    The caller is responsible for committing (or rolling back) the surrounding
+    transaction.  Using :meth:`~sqlalchemy.ext.asyncio.AsyncSession.flush` means
+    the row is visible within the current transaction and gets the PK assigned,
+    but the commit happens once, atomically, alongside the business-data change.
+
+    Args:
+        db: Active async database session.
+        user_id: ID of the user performing the action.
+        action: Short verb describing the operation, e.g. ``"create"``, ``"update"``,
+            ``"delete"``.  Stored as-is; callers should use consistent strings.
+        resource_type: Name of the affected resource, e.g. ``"category"``,
+            ``"product"``.
+        resource_id: Primary key of the affected row.
+        changes: Optional mapping of changed fields.  For create operations pass
+            the full new state; for updates pass only the changed fields as
+            ``{field: {"old": old_value, "new": new_value}}``.
+        ip_address: Optional client IP address for the request.
+
+    Returns:
+        The newly created :class:`AuditLog` instance (already flushed).
     """
-    audit = AuditLog(
+    entry = AuditLog(
         user_id=user_id,
         action=action,
         resource_type=resource_type,
@@ -39,53 +48,6 @@ async def record_audit_log(
         changes=changes,
         ip_address=ip_address,
     )
-    db.add(audit)
-    await db.commit()
-    await db.refresh(audit)
-    return audit
-
-
-async def list_audit_logs(
-    db: AsyncSession,
-    query: AuditLogQuery,
-) -> tuple[list[AuditLog], int]:
-    """Return a paginated, filtered list of audit log entries and the total match count.
-
-    Filters are applied as equality or range constraints based on the fields
-    present in *query*.  Results are ordered newest-first by ``created_at``.
-    Returns a ``(logs, total)`` tuple where ``total`` is the count before
-    pagination so callers can compute ``total_pages``.
-    """
-    stmt = select(AuditLog)
-    count_stmt = select(func.count()).select_from(AuditLog)
-
-    if query.start_date is not None:
-        stmt = stmt.where(AuditLog.created_at >= query.start_date)
-        count_stmt = count_stmt.where(AuditLog.created_at >= query.start_date)
-
-    if query.end_date is not None:
-        stmt = stmt.where(AuditLog.created_at <= query.end_date)
-        count_stmt = count_stmt.where(AuditLog.created_at <= query.end_date)
-
-    if query.action is not None:
-        stmt = stmt.where(AuditLog.action == query.action)
-        count_stmt = count_stmt.where(AuditLog.action == query.action)
-
-    if query.resource_type is not None:
-        stmt = stmt.where(AuditLog.resource_type == query.resource_type)
-        count_stmt = count_stmt.where(AuditLog.resource_type == query.resource_type)
-
-    if query.user_id is not None:
-        stmt = stmt.where(AuditLog.user_id == query.user_id)
-        count_stmt = count_stmt.where(AuditLog.user_id == query.user_id)
-
-    total_result = await db.execute(count_stmt)
-    total: int = total_result.scalar_one()
-
-    offset = (query.page - 1) * query.per_page
-    stmt = stmt.order_by(AuditLog.created_at.desc()).offset(offset).limit(query.per_page)
-
-    result = await db.execute(stmt)
-    logs: list[AuditLog] = list(result.scalars().all())
-
-    return logs, total
+    db.add(entry)
+    await db.flush()
+    return entry
