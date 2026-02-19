@@ -18,13 +18,15 @@ jobs:
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: railway up
+          SVC_ID: ${{ secrets.RAILWAY_SVC_ID }}
+        run: railway up --service "$SVC_ID"
 
       - name: Smoke test
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          SVC_ID: ${{ secrets.RAILWAY_SVC_ID }}
         run: |
-          SERVICE_URL=$(railway domain | tr -d '[:space:]')
+          SERVICE_URL=$(railway domain --service "$SVC_ID" | tr -d '[:space:]')
           [[ "$SERVICE_URL" == http* ]] || SERVICE_URL="https://$SERVICE_URL"
           echo "Smoke testing: $SERVICE_URL"
 
