@@ -3,14 +3,12 @@
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
+import bcrypt
 from jose import jwt
-from passlib.context import CryptContext
 
 from src.config import settings
-
-_pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=12)
-
 
 # ---------------------------------------------------------------------------
 # Password
@@ -19,12 +17,12 @@ _pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__round
 
 def hash_password(password: str) -> str:
     """Return a bcrypt hash of *password* using 12 cost rounds."""
-    return _pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt(rounds=12)).decode()
 
 
 def verify_password(password: str, password_hash: str) -> bool:
     """Return True if *password* matches *password_hash*."""
-    return _pwd_context.verify(password, password_hash)
+    return bcrypt.checkpw(password.encode(), password_hash.encode())
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +59,7 @@ def get_api_key_prefix(api_key: str) -> str:
 def create_access_token(user_id: str, email: str, role: str) -> str:
     """Return a signed HS256 JWT access token valid for *access_token_expire_minutes*."""
     expire = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
-    payload = {
+    payload: dict[str, Any] = {
         "sub": user_id,
         "email": email,
         "role": role,
@@ -78,7 +76,7 @@ def create_refresh_token(user_id: str) -> str:
     reject tokens issued as access tokens (and vice-versa).
     """
     expire = datetime.now(UTC) + timedelta(days=settings.refresh_token_expire_days)
-    payload = {
+    payload: dict[str, Any] = {
         "sub": user_id,
         "type": "refresh",
         "exp": expire,
@@ -86,6 +84,6 @@ def create_refresh_token(user_id: str) -> str:
     return jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
 
-def decode_token(token: str) -> dict:
+def decode_token(token: str) -> dict[str, Any]:
     """Decode and verify *token*.  Raises :exc:`jose.JWTError` if invalid or expired."""
     return jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
