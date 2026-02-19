@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from jose import JWTError
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.config import settings
 from src.dependencies import get_current_user, get_db
+from src.middleware.rate_limit import get_user_key, limiter
 from src.models import User
 from src.schemas.auth import (
     LoginRequest,
@@ -45,20 +46,24 @@ _INVALID_REFRESH = HTTPException(
 
 
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 async def register(
-    request: RegisterRequest,
+    request: Request,
+    response: Response,
+    body: RegisterRequest,
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> RegisterResponse:
     """Register a new user account.
 
     Generates a one-time API key returned only in this response.
     Returns 409 if the email address is already registered.
+    Rate limited: 5 requests per minute per IP address.
     """
     raw_api_key = generate_api_key()
     user = User(
-        email=request.email,
-        name=request.name,
-        password_hash=hash_password(request.password),
+        email=body.email,
+        name=body.name,
+        password_hash=hash_password(body.password),
         api_key_hash=hash_api_key(raw_api_key),
         api_key_prefix=raw_api_key[:8],
     )
@@ -83,19 +88,23 @@ async def register(
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter.limit("10/minute")
 async def login(
-    request: LoginRequest,
+    request: Request,
+    response: Response,
+    body: LoginRequest,
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> TokenResponse:
     """Authenticate with email and password.
 
     Returns a JWT access token (30-minute lifetime) and a refresh token
     (7-day lifetime) on success.
+    Rate limited: 10 requests per minute per IP address.
     """
-    result = await db.execute(select(User).where(User.email == request.email))
+    result = await db.execute(select(User).where(User.email == body.email))
     user: User | None = result.scalar_one_or_none()
 
-    if user is None or not verify_password(request.password, user.password_hash):
+    if user is None or not verify_password(body.password, user.password_hash):
         raise _INVALID_CREDENTIALS
 
     if not user.is_active:
@@ -113,17 +122,21 @@ async def login(
 
 
 @router.post("/refresh", response_model=TokenResponse)
+@limiter.limit("30/minute")
 async def refresh(
-    request: RefreshRequest,
+    request: Request,
+    response: Response,
+    body: RefreshRequest,
     db: AsyncSession = Depends(get_db),  # noqa: B008
 ) -> TokenResponse:
     """Exchange a valid refresh token for new access and refresh tokens.
 
     Refresh tokens are single-use — each call issues a fresh pair.
     Returns 401 if the token is missing, expired, or not a refresh token.
+    Rate limited: 30 requests per minute per IP address.
     """
     try:
-        payload = decode_token(request.refresh_token)
+        payload = decode_token(body.refresh_token)
     except JWTError:
         raise _INVALID_REFRESH from None
 
@@ -151,8 +164,14 @@ async def refresh(
 
 
 @router.get("/me", response_model=UserResponse)
+@limiter.limit("100/minute", key_func=get_user_key)
 async def me(
+    request: Request,
+    response: Response,
     current_user: User = Depends(get_current_user),  # noqa: B008
 ) -> UserResponse:
-    """Return the authenticated user's profile."""
+    """Return the authenticated user's profile.
+
+    Rate limited: 100 requests per minute per authenticated user.
+    """
     return UserResponse.model_validate(current_user)

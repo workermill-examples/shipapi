@@ -16,7 +16,6 @@ from fastapi.testclient import TestClient
 from src.middleware.access_log import AccessLogMiddleware
 from src.middleware.request_id import RequestIdMiddleware
 
-
 # ---------------------------------------------------------------------------
 # Test application factory
 # ---------------------------------------------------------------------------
