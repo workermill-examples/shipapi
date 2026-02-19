@@ -18,7 +18,6 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
-
 # ---------------------------------------------------------------------------
 # POST /api/v1/warehouses
 # ---------------------------------------------------------------------------
@@ -73,9 +72,7 @@ async def test_list_warehouses_returns_paginated_envelope(
     seeded_db: dict,
 ) -> None:
     """GET /warehouses returns the standard paginated envelope with all seeded warehouses."""
-    response = await async_client.get(
-        "/api/v1/warehouses", headers=seeded_db["user_auth"]
-    )
+    response = await async_client.get("/api/v1/warehouses", headers=seeded_db["user_auth"])
     assert response.status_code == 200, response.text
     body = response.json()
 
@@ -95,9 +92,7 @@ async def test_list_warehouses_includes_seeded_warehouses(
     seeded_db: dict,
 ) -> None:
     """List endpoint returns the two seeded warehouses."""
-    response = await async_client.get(
-        "/api/v1/warehouses", headers=seeded_db["user_auth"]
-    )
+    response = await async_client.get("/api/v1/warehouses", headers=seeded_db["user_auth"])
     assert response.status_code == 200
     body = response.json()
     assert body["pagination"]["total"] == 2

@@ -110,7 +110,7 @@ def _make_app(db_mock: Any) -> FastAPI:
     app = FastAPI()
     app.include_router(products_router)
 
-    async def override_get_db() -> AsyncGenerator[Any, None]:
+    async def override_get_db() -> AsyncGenerator[Any]:
         yield db_mock
 
     app.dependency_overrides[get_db] = override_get_db

@@ -24,7 +24,6 @@ ErrorResponse envelope (DEC-001, backend_developer).
 import pytest
 from httpx import AsyncClient
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
