@@ -27,6 +27,7 @@ def test_settings_loads_from_env(monkeypatch):
 def test_settings_defaults(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://u:p@localhost/db")
     monkeypatch.setenv("JWT_SECRET_KEY", "supersecret")
+    monkeypatch.delenv("DATABASE_URL_DIRECT", raising=False)
     s = Settings(_env_file=None)
     assert s.database_url_direct is None
     assert s.jwt_algorithm == "HS256"
