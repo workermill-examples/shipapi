@@ -58,7 +58,7 @@ app = FastAPI(
 app.add_exception_handler(HTTPException, http_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(RequestValidationError, validation_exception_handler)  # type: ignore[arg-type]
 app.add_exception_handler(IntegrityError, integrity_error_handler)  # type: ignore[arg-type]
-app.add_exception_handler(Exception, unhandled_exception_handler)  # type: ignore[arg-type]
+app.add_exception_handler(Exception, unhandled_exception_handler)
 
 # ---------------------------------------------------------------------------
 # Rate limiter — attach state and register 429 exception handler
