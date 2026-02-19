@@ -13,6 +13,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI, Request, Response
 from fastapi.testclient import TestClient
+from httpx import AsyncClient
 from jose import jwt as jose_jwt
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -346,3 +347,69 @@ class TestLimiterExport:
 
     def test_limiter_default_key_is_remote_address(self) -> None:
         assert limiter._key_func is get_remote_address
+
+
+# ---------------------------------------------------------------------------
+# Integration tests — real FastAPI app + actual /auth/register endpoint (5/min)
+# ---------------------------------------------------------------------------
+# These tests use the ``async_client`` fixture (real PostgreSQL test database)
+# to exercise the actual endpoint's rate limit.  The ``reset_rate_limiter``
+# autouse fixture (conftest.py) guarantees each test starts with a clean window.
+
+
+def _integration_reg_payload() -> dict[str, str]:
+    """Fresh registration payload with a unique email to avoid 409 collisions."""
+    return {
+        "email": f"rl_int_{uuid.uuid4().hex[:8]}@test.com",
+        "name": "Rate Limit Integration User",
+        "password": "TestPassword123!",
+    }
+
+
+@pytest.mark.asyncio
+async def test_register_endpoint_rate_limit_returns_429_on_excess(
+    async_client: AsyncClient,
+) -> None:
+    """The real /register endpoint returns 429 after 5 requests from the same IP."""
+    for _ in range(5):
+        resp = await async_client.post("/api/v1/auth/register", json=_integration_reg_payload())
+        assert resp.status_code == 201, f"Expected 201, got {resp.status_code}: {resp.text}"
+
+    # 6th request must be rate-limited.
+    resp = await async_client.post("/api/v1/auth/register", json=_integration_reg_payload())
+    assert resp.status_code == 429
+
+
+@pytest.mark.asyncio
+async def test_register_endpoint_429_includes_retry_after_header(
+    async_client: AsyncClient,
+) -> None:
+    """A 429 from the real /register endpoint includes the Retry-After header."""
+    for _ in range(5):
+        await async_client.post("/api/v1/auth/register", json=_integration_reg_payload())
+
+    resp = await async_client.post("/api/v1/auth/register", json=_integration_reg_payload())
+    assert resp.status_code == 429
+    assert "retry-after" in resp.headers, (
+        f"Retry-After header missing. Headers received: {dict(resp.headers)}"
+    )
+
+
+@pytest.mark.asyncio
+async def test_register_endpoint_normal_response_has_x_ratelimit_headers(
+    async_client: AsyncClient,
+) -> None:
+    """A successful /register response includes X-RateLimit-* headers.
+
+    slowapi injects X-RateLimit-Limit, X-RateLimit-Remaining, and X-RateLimit-Reset
+    headers when ``headers_enabled=True`` and the endpoint declares
+    ``response: Response`` (as the register endpoint does).
+    """
+    resp = await async_client.post("/api/v1/auth/register", json=_integration_reg_payload())
+    assert resp.status_code == 201
+
+    rate_headers = [k for k in resp.headers.keys() if k.startswith("x-ratelimit-")]
+    assert len(rate_headers) > 0, (
+        f"No X-RateLimit-* headers found in /register response. "
+        f"Headers: {dict(resp.headers)}"
+    )
