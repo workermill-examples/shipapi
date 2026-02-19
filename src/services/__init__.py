@@ -9,6 +9,14 @@ from src.services.auth import (
     verify_api_key,
     verify_password,
 )
+from src.services.stock import (
+    get_stock_alerts,
+    get_stock_level,
+    get_warehouse_stock_summary,
+    list_warehouse_stock,
+    transfer_stock,
+    upsert_stock_level,
+)
 
 __all__ = [
     "create_access_token",
@@ -20,4 +28,10 @@ __all__ = [
     "hash_password",
     "verify_api_key",
     "verify_password",
+    "get_stock_alerts",
+    "get_stock_level",
+    "get_warehouse_stock_summary",
+    "list_warehouse_stock",
+    "transfer_stock",
+    "upsert_stock_level",
 ]
