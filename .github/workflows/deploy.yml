@@ -15,19 +15,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Debug services
+      - name: Debug project
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway status || true
-          railway service || true
-          railway --help 2>&1 | head -30 || true
+          railway status
+          echo "---"
+          railway list || true
+          echo "---"
+          railway up --help 2>&1 | head -20 || true
 
       - name: Deploy to Railway
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-          SVC_ID: ${{ secrets.RAILWAY_SVC_ID }}
-        run: railway up --service "$SVC_ID"
+        run: railway up
 
       - name: Smoke test
         env:
