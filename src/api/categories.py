@@ -3,7 +3,7 @@
 import uuid
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -17,7 +17,9 @@ from src.schemas.category import (
     CategoryResponse,
     CategoryUpdate,
 )
+from src.schemas.common import PaginatedResponse
 from src.services.audit import record_audit
+from src.utils.pagination import paginate
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
@@ -34,17 +36,18 @@ def _serialize_value(value: Any) -> Any:
     return value
 
 
-@router.get("", response_model=list[CategoryResponse])
+@router.get("", response_model=PaginatedResponse[CategoryResponse])
 async def list_categories(
+    page: int = Query(1, ge=1),  # noqa: B008
+    per_page: int = Query(20, ge=1, le=100),  # noqa: B008
     db: AsyncSession = Depends(get_db),  # noqa: B008
-) -> list[CategoryResponse]:
-    """Return all categories as a flat list ordered by name.
+) -> PaginatedResponse[CategoryResponse]:
+    """Return categories as a paginated flat list ordered by name.
 
     Parent–child hierarchy is expressed via the ``parent_id`` field on each item.
     """
-    result = await db.execute(select(Category).order_by(Category.name))
-    categories = result.scalars().all()
-    return [CategoryResponse.model_validate(c) for c in categories]
+    query = select(Category).order_by(Category.name)
+    return await paginate(db, query, page, per_page, CategoryResponse)
 
 
 @router.post("", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)

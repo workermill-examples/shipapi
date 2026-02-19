@@ -45,6 +45,10 @@ async def record_audit_log(
     return audit
 
 
+#: Alias for ``record_audit_log`` — used by ``src/services/__init__.py`` and endpoint modules.
+record_audit = record_audit_log
+
+
 async def list_audit_logs(
     db: AsyncSession,
     query: AuditLogQuery,

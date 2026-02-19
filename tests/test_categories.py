@@ -92,44 +92,60 @@ def _token(user: MagicMock) -> str:
 # ---------------------------------------------------------------------------
 
 
+def _make_paginated_db_mock(items: list[Any], total: int | None = None) -> AsyncMock:
+    """Build a db mock that supports paginate()'s two execute() calls.
+
+    The paginate utility calls db.execute() twice:
+    1. A COUNT query → result.scalar_one() returns the total row count.
+    2. A data query  → result.scalars().all() returns the page of items.
+    """
+    actual_total = total if total is not None else len(items)
+
+    count_result = MagicMock()
+    count_result.scalar_one.return_value = actual_total
+
+    data_result = MagicMock()
+    data_result.scalars.return_value.all.return_value = items
+
+    db_mock = AsyncMock()
+    db_mock.execute = AsyncMock(side_effect=[count_result, data_result])
+    return db_mock
+
+
 @pytest.mark.asyncio
 async def test_list_categories_returns_flat_list() -> None:
-    """GET /categories returns all categories ordered by name."""
+    """GET /categories returns all categories in a paginated envelope ordered by name."""
     cat1 = _make_category(name="Appliances")
     cat2 = _make_category(name="Electronics")
 
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [cat1, cat2]
-
-    db_mock = AsyncMock()
-    db_mock.execute = AsyncMock(return_value=mock_result)
+    db_mock = _make_paginated_db_mock([cat1, cat2])
 
     app = _make_app(db_mock)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/categories")
 
     assert response.status_code == 200
-    data = response.json()
-    assert len(data) == 2
-    assert data[0]["name"] == "Appliances"
-    assert data[1]["name"] == "Electronics"
+    body = response.json()
+    assert "data" in body
+    assert "pagination" in body
+    assert len(body["data"]) == 2
+    assert body["data"][0]["name"] == "Appliances"
+    assert body["data"][1]["name"] == "Electronics"
 
 
 @pytest.mark.asyncio
 async def test_list_categories_empty_returns_empty_list() -> None:
-    """GET /categories returns [] when no categories exist."""
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = []
-
-    db_mock = AsyncMock()
-    db_mock.execute = AsyncMock(return_value=mock_result)
+    """GET /categories returns empty data list when no categories exist."""
+    db_mock = _make_paginated_db_mock([])
 
     app = _make_app(db_mock)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/categories")
 
     assert response.status_code == 200
-    assert response.json() == []
+    body = response.json()
+    assert body["data"] == []
+    assert body["pagination"]["total"] == 0
 
 
 @pytest.mark.asyncio
@@ -139,29 +155,21 @@ async def test_list_categories_includes_parent_id() -> None:
     parent = _make_category(name="Parent")
     child = _make_category(name="Child", parent_id=parent_id)
 
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = [child, parent]
-
-    db_mock = AsyncMock()
-    db_mock.execute = AsyncMock(return_value=mock_result)
+    db_mock = _make_paginated_db_mock([child, parent])
 
     app = _make_app(db_mock)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         response = await client.get("/categories")
 
-    data = response.json()
-    child_data = next(d for d in data if d["name"] == "Child")
+    items = response.json()["data"]
+    child_data = next(d for d in items if d["name"] == "Child")
     assert child_data["parent_id"] == str(parent_id)
 
 
 @pytest.mark.asyncio
 async def test_list_categories_no_auth_required() -> None:
     """GET /categories is a public endpoint — no Authorization header needed."""
-    mock_result = MagicMock()
-    mock_result.scalars.return_value.all.return_value = []
-
-    db_mock = AsyncMock()
-    db_mock.execute = AsyncMock(return_value=mock_result)
+    db_mock = _make_paginated_db_mock([])
 
     app = _make_app(db_mock)
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
