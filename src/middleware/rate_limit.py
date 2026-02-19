@@ -64,12 +64,12 @@ from typing import Any
 
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from starlette.responses import Response
 from jose import JWTError
 from jose import jwt as _jose_jwt
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
+from starlette.responses import Response
 
 from src.config import settings
 from src.schemas.common import ErrorCode, ErrorResponse

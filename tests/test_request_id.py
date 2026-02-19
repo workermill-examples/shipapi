@@ -13,7 +13,6 @@ from fastapi.testclient import TestClient
 
 from src.middleware.request_id import REQUEST_ID_CTX, RequestIdMiddleware
 
-
 # ---------------------------------------------------------------------------
 # Test application factory
 # ---------------------------------------------------------------------------
