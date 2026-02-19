@@ -1,3 +1,4 @@
+from src.services.audit import record_audit
 from src.services.auth import (
     create_access_token,
     create_refresh_token,
@@ -11,6 +12,9 @@ from src.services.auth import (
 )
 
 __all__ = [
+    # audit
+    "record_audit",
+    # auth
     "create_access_token",
     "create_refresh_token",
     "decode_token",
