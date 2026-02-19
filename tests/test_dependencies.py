@@ -120,9 +120,7 @@ async def test_bearer_refresh_token_returns_401():
     db_mock = AsyncMock()
 
     async with _make_client(db_mock) as client:
-        response = await client.get(
-            "/protected", headers={"Authorization": f"Bearer {refresh}"}
-        )
+        response = await client.get("/protected", headers={"Authorization": f"Bearer {refresh}"})
 
     assert response.status_code == 401
 
