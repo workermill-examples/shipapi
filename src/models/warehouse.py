@@ -1,4 +1,3 @@
-from typing import List
 
 from sqlalchemy import Boolean, CheckConstraint, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,7 +16,7 @@ class Warehouse(UUIDMixin, TimestampMixin, Base):
     capacity: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
-    stock_levels: Mapped[List["StockLevel"]] = relationship(
+    stock_levels: Mapped[list["StockLevel"]] = relationship(
         "StockLevel",
         back_populates="warehouse",
     )
