@@ -525,3 +525,346 @@ async def test_get_audit_log_response_fields() -> None:
     assert entry["resource_type"] == "product"
     assert entry["changes"] == {"name": {"old": "Old Name", "new": "New Name"}}
     assert entry["ip_address"] == "192.168.1.1"
+
+
+# ---------------------------------------------------------------------------
+# Integration tests — real PostgreSQL via async_client + seeded_db
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_entry_exists_after_product_create(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """Creating a product via the API produces an audit log entry with action='create'.
+
+    seeded_db creates 3 products and 2 categories via HTTP, so their create
+    entries are present in the audit log before any assertion.
+    """
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"action": "create", "resource_type": "product"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200, resp.text
+
+    data = resp.json()
+    assert "data" in data
+    assert "pagination" in data
+    # Three products were seeded via API — at least 3 create entries
+    assert data["pagination"]["total"] >= 3
+
+    entries = data["data"]
+    product_ids = {seeded_db["product1_id"], seeded_db["product2_id"], seeded_db["product3_id"]}
+    found_ids = {e["resource_id"] for e in entries}
+    assert product_ids.issubset(found_ids), (
+        f"Expected all seeded product IDs in audit entries. "
+        f"Missing: {product_ids - found_ids}"
+    )
+
+    # Verify audit entry schema shape
+    entry = entries[0]
+    assert entry["action"] == "create"
+    assert entry["resource_type"] == "product"
+    assert "id" in entry
+    assert "user_id" in entry
+    assert "resource_id" in entry
+    assert "changes" in entry
+    assert "created_at" in entry
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_entry_changes_diff_on_product_update(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """Updating a product records before/after values for changed fields in the audit log."""
+    product_id = seeded_db["product1_id"]
+    # product1 was seeded with price "299.99"
+    update_resp = await async_client.put(
+        f"/api/v1/products/{product_id}",
+        json={"price": "399.99"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert update_resp.status_code == 200, f"Update failed: {update_resp.text}"
+
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"action": "update", "resource_type": "product"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+
+    entries = resp.json()["data"]
+    matching = [e for e in entries if e["resource_id"] == product_id]
+    assert len(matching) >= 1, f"No update audit entry found for product {product_id}"
+
+    entry = matching[0]
+    assert entry["action"] == "update"
+    assert entry["changes"] is not None
+    assert "price" in entry["changes"], f"Expected 'price' in changes, got: {entry['changes']}"
+    assert entry["changes"]["price"]["old"] == "299.99"
+    assert entry["changes"]["price"]["new"] == "399.99"
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_update_only_records_changed_fields(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """Audit changes only include the fields that actually changed, not the full object."""
+    product_id = seeded_db["product2_id"]
+
+    update_resp = await async_client.put(
+        f"/api/v1/products/{product_id}",
+        json={"name": "Updated Keyboard Name"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert update_resp.status_code == 200
+
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"action": "update", "resource_type": "product"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+
+    entries = resp.json()["data"]
+    matching = [e for e in entries if e["resource_id"] == product_id]
+    assert len(matching) >= 1
+
+    entry = matching[0]
+    assert "name" in entry["changes"]
+    assert entry["changes"]["name"]["new"] == "Updated Keyboard Name"
+    # price was not sent — must not appear in changes
+    assert "price" not in entry["changes"]
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_filter_date_range_includes_recent(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """A date range covering the last 5 minutes returns the seeded audit entries."""
+    from datetime import UTC, datetime, timedelta
+
+    start = (datetime.now(UTC) - timedelta(minutes=5)).isoformat()
+    end = (datetime.now(UTC) + timedelta(minutes=5)).isoformat()
+
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"start_date": start, "end_date": end},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+    assert resp.json()["pagination"]["total"] >= 1
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_filter_date_range_excludes_old(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """A date range entirely in the past (one year ago) returns zero entries."""
+    from datetime import UTC, datetime, timedelta
+
+    start = (datetime.now(UTC) - timedelta(days=366)).isoformat()
+    end = (datetime.now(UTC) - timedelta(days=365)).isoformat()
+
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"start_date": start, "end_date": end},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+    assert resp.json()["pagination"]["total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_filter_by_action(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """Filtering by action=create returns only create-action entries."""
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"action": "create"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+
+    entries = resp.json()["data"]
+    assert len(entries) >= 1
+    for entry in entries:
+        assert entry["action"] == "create", (
+            f"Expected action='create', got '{entry['action']}'"
+        )
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_filter_by_action_update(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """After updating a product, filtering by action=update returns only update entries."""
+    product_id = seeded_db["product3_id"]
+    update_resp = await async_client.put(
+        f"/api/v1/products/{product_id}",
+        json={"price": "59.99"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert update_resp.status_code == 200
+
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"action": "update"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+
+    data = resp.json()
+    assert data["pagination"]["total"] >= 1
+    for entry in data["data"]:
+        assert entry["action"] == "update"
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_filter_by_resource_type_product(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """Filtering by resource_type=product returns only product resource entries."""
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"resource_type": "product"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+
+    entries = resp.json()["data"]
+    assert len(entries) >= 1
+    for entry in entries:
+        assert entry["resource_type"] == "product", (
+            f"Expected resource_type='product', got '{entry['resource_type']}'"
+        )
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_filter_by_resource_type_category(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """Filtering by resource_type=category returns only category resource entries."""
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"resource_type": "category"},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+
+    data = resp.json()
+    # seeded_db creates 2 categories via the HTTP API
+    assert data["pagination"]["total"] >= 2
+    for entry in data["data"]:
+        assert entry["resource_type"] == "category"
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_filter_by_user_id(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """Filtering by user_id returns only entries authored by that user."""
+    me_resp = await async_client.get("/api/v1/auth/me", headers=seeded_db["admin_auth"])
+    assert me_resp.status_code == 200
+    admin_user_id = me_resp.json()["id"]
+
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"user_id": admin_user_id},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+
+    data = resp.json()
+    assert data["pagination"]["total"] >= 1
+    for entry in data["data"]:
+        assert entry["user_id"] == admin_user_id, (
+            f"Expected user_id={admin_user_id}, got {entry['user_id']}"
+        )
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_filter_by_user_id_excludes_other_users(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """Filtering by a regular user's ID returns no admin-authored entries."""
+    me_resp = await async_client.get("/api/v1/auth/me", headers=seeded_db["user_auth"])
+    assert me_resp.status_code == 200
+    regular_user_id = me_resp.json()["id"]
+
+    # The regular user has not performed any write operations — zero entries
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"user_id": regular_user_id},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+    assert resp.json()["pagination"]["total"] == 0
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_non_admin_returns_403(
+    async_client: AsyncClient,
+    auth_headers: dict[str, str],
+) -> None:
+    """A regular (non-admin) user receives HTTP 403 and the error envelope."""
+    resp = await async_client.get("/api/v1/audit-log", headers=auth_headers)
+    assert resp.status_code == 403
+
+    body = resp.json()
+    assert "error" in body
+    assert body["error"]["code"] == "FORBIDDEN"
+    assert isinstance(body["error"]["message"], str)
+    assert len(body["error"]["message"]) > 0
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_unauthenticated_returns_401(
+    async_client: AsyncClient,
+) -> None:
+    """An unauthenticated request to the audit log endpoint returns HTTP 401."""
+    resp = await async_client.get("/api/v1/audit-log")
+    assert resp.status_code == 401
+
+    body = resp.json()
+    assert "error" in body
+    assert body["error"]["code"] == "UNAUTHORIZED"
+
+
+@pytest.mark.asyncio
+async def test_integration_audit_pagination_envelope(
+    async_client: AsyncClient,
+    seeded_db: dict,
+) -> None:
+    """The audit log response wraps results in the standard paginated envelope."""
+    resp = await async_client.get(
+        "/api/v1/audit-log",
+        params={"page": 1, "per_page": 2},
+        headers=seeded_db["admin_auth"],
+    )
+    assert resp.status_code == 200
+
+    body = resp.json()
+    assert "data" in body
+    assert "pagination" in body
+
+    pagination = body["pagination"]
+    assert pagination["page"] == 1
+    assert pagination["per_page"] == 2
+    assert "total" in pagination
+    assert "total_pages" in pagination
+    # With per_page=2, data list has at most 2 items
+    assert len(body["data"]) <= 2
