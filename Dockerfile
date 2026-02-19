@@ -19,12 +19,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     uv sync --frozen --no-install-project --no-dev
 
-# Copy application source
+# Copy application source and supporting directories
 COPY src/ ./src/
-
-# Stub alembic/ and seed/ directories — populated by later cards.
-# These stubs ensure the runtime COPY commands succeed immediately.
-RUN mkdir -p alembic seed
+COPY alembic/ ./alembic/
+COPY seed/ ./seed/
+COPY alembic.ini ./
 
 # Install the project itself into the venv
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -42,10 +41,11 @@ WORKDIR /app
 # Copy virtual environment from builder (no uv needed at runtime)
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy application code
+# Copy application code and configuration
 COPY --from=builder /app/src ./src
 COPY --from=builder /app/alembic ./alembic
 COPY --from=builder /app/seed ./seed
+COPY --from=builder /app/alembic.ini ./alembic.ini
 
 # Create non-root user
 RUN groupadd -g 1001 appuser \

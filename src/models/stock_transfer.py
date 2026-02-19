@@ -1,9 +1,15 @@
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.models.base import Base, TimestampMixin, UUIDMixin
+
+if TYPE_CHECKING:
+    from src.models.product import Product
+    from src.models.user import User
+    from src.models.warehouse import Warehouse
 
 
 class StockTransfer(UUIDMixin, TimestampMixin, Base):

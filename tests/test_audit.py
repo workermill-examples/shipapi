@@ -559,8 +559,7 @@ async def test_integration_audit_entry_exists_after_product_create(
     product_ids = {seeded_db["product1_id"], seeded_db["product2_id"], seeded_db["product3_id"]}
     found_ids = {e["resource_id"] for e in entries}
     assert product_ids.issubset(found_ids), (
-        f"Expected all seeded product IDs in audit entries. "
-        f"Missing: {product_ids - found_ids}"
+        f"Expected all seeded product IDs in audit entries. Missing: {product_ids - found_ids}"
     )
 
     # Verify audit entry schema shape
@@ -697,9 +696,7 @@ async def test_integration_audit_filter_by_action(
     entries = resp.json()["data"]
     assert len(entries) >= 1
     for entry in entries:
-        assert entry["action"] == "create", (
-            f"Expected action='create', got '{entry['action']}'"
-        )
+        assert entry["action"] == "create", f"Expected action='create', got '{entry['action']}'"
 
 
 @pytest.mark.asyncio

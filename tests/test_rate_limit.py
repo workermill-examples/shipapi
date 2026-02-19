@@ -147,9 +147,7 @@ class TestGetUserKeyFromApiKey:
     def test_bearer_takes_precedence_over_api_key(self) -> None:
         user_id = str(uuid.uuid4())
         token = _make_access_token(user_id)
-        request = _make_request(
-            {"Authorization": f"Bearer {token}", "X-API-Key": "sk_ignored"}
-        )
+        request = _make_request({"Authorization": f"Bearer {token}", "X-API-Key": "sk_ignored"})
         key = get_user_key(request)
         assert key == f"user:{user_id}"
 
@@ -166,9 +164,7 @@ class TestGetUserKeyIPFallback:
         assert key == "10.0.0.1"
 
     def test_invalid_bearer_falls_back_to_ip(self) -> None:
-        request = _make_request(
-            {"Authorization": "Bearer bad-token"}, client_host="192.168.1.1"
-        )
+        request = _make_request({"Authorization": "Bearer bad-token"}, client_host="192.168.1.1")
         key = get_user_key(request)
         assert key == "192.168.1.1"
 
@@ -408,8 +404,7 @@ async def test_register_endpoint_normal_response_has_x_ratelimit_headers(
     resp = await async_client.post("/api/v1/auth/register", json=_integration_reg_payload())
     assert resp.status_code == 201
 
-    rate_headers = [k for k in resp.headers.keys() if k.startswith("x-ratelimit-")]
+    rate_headers = [k for k in resp.headers if k.startswith("x-ratelimit-")]
     assert len(rate_headers) > 0, (
-        f"No X-RateLimit-* headers found in /register response. "
-        f"Headers: {dict(resp.headers)}"
+        f"No X-RateLimit-* headers found in /register response. Headers: {dict(resp.headers)}"
     )
