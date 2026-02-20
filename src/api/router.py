@@ -7,6 +7,7 @@ from src.api.auth import router as auth_router
 from src.api.categories import router as categories_router
 from src.api.health import router as health_router
 from src.api.products import router as products_router
+from src.api.showcase import router as showcase_router
 from src.api.stock import router as stock_router
 from src.api.warehouses import router as warehouses_router
 
@@ -18,3 +19,4 @@ api_router.include_router(categories_router)
 api_router.include_router(products_router)
 api_router.include_router(warehouses_router)
 api_router.include_router(stock_router)
+api_router.include_router(showcase_router)
