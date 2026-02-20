@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 from starlette.exceptions import HTTPException
 
 from src.api.router import api_router
+from src.api.showcase import root_router
 from src.database import engine
 from src.middleware.access_log import AccessLogMiddleware
 from src.middleware.error_handler import (
@@ -88,4 +89,5 @@ app.add_middleware(AccessLogMiddleware)
 # to execute on every request and the last to complete on every response.
 app.add_middleware(RequestIdMiddleware)
 
+app.include_router(root_router)
 app.include_router(api_router)
