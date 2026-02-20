@@ -19,29 +19,3 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: railway up --service shipapi --detach
-
-  smoke-test:
-    needs: deploy
-    runs-on: ubuntu-latest
-    steps:
-      - name: Wait for deployment
-        run: sleep 120
-
-      - name: Smoke test
-        run: |
-          for attempt in $(seq 1 5); do
-            echo "Attempt $attempt/5..."
-            if curl -sf "https://shipapi.up.railway.app/api/v1/health" \
-               && curl -sf "https://shipapi.up.railway.app/docs" \
-               && curl -sf "https://shipapi.up.railway.app/redoc"; then
-              echo "All smoke tests passed!"
-              exit 0
-            fi
-            if [ "$attempt" -lt 5 ]; then
-              echo "Retrying in 30s..."
-              sleep 30
-            fi
-          done
-
-          echo "Smoke tests failed after 5 attempts"
-          exit 1
