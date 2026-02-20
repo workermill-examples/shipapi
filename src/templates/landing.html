@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ShipAPI — Inventory Management API Built by AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css"
+  />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    code, pre { font-family: 'JetBrains Mono', monospace; }
+    .gradient-text {
+      background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 50%, #34d399 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .gradient-border {
+      background: linear-gradient(135deg, #1e3a5f 0%, #2d1b69 50%, #0f3d2e 100%);
+      border: 1px solid transparent;
+      background-clip: padding-box;
+    }
+    .stat-card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(96, 165, 250, 0.12); }
+    .explorer-response { max-height: 420px; overflow-y: auto; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 9999px; font-size: 12px; font-weight: 500;
+    }
+    .endpoint-row { transition: background 0.15s ease; cursor: pointer; }
+    .endpoint-row:hover { background: rgba(255,255,255,0.03); }
+    .endpoint-row.active { background: rgba(96, 165, 250, 0.06); border-left: 2px solid #60a5fa; }
+    .loading-pulse { animation: pulse 1.5s ease-in-out infinite; }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+    .hljs { background: #0d1117 !important; border-radius: 8px; padding: 16px !important; }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: #111827; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+    .epic-card { transition: border-color 0.2s ease, transform 0.2s ease; }
+    .epic-card:hover { transform: translateY(-1px); }
+    .tech-card { transition: border-color 0.2s ease, transform 0.2s ease; }
+    .tech-card:hover { border-color: #374151 !important; transform: translateY(-2px); }
+    .copy-btn { transition: all 0.15s ease; }
+    .copy-btn.copied { color: #34d399 !important; }
+  </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen antialiased">
+
+<!-- ===== NAVIGATION ===== -->
+<nav class="border-b border-gray-800/50 bg-gray-950/90 backdrop-blur-md sticky top-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm select-none">S</div>
+      <span class="font-semibold text-white tracking-tight">ShipAPI</span>
+      <span class="text-gray-700 hidden sm:inline select-none">·</span>
+      <a href="https://workermill.com" target="_blank" rel="noopener noreferrer"
+         class="hidden sm:flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-300 transition-colors">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Built by WorkerMill
+      </a>
+    </div>
+    <nav class="flex items-center gap-1 sm:gap-2" aria-label="Main navigation">
+      <a href="#explorer" class="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800/50">Explorer</a>
+      <a href="/docs" class="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800/50">Docs</a>
+      <a href="/redoc" class="text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-800/50 hidden sm:block">ReDoc</a>
+      <a href="https://github.com/workermill-examples/shipapi" target="_blank" rel="noopener noreferrer"
+         class="flex items-center gap-1.5 text-sm bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-lg transition-colors border border-gray-700/50 ml-1">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </nav>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<header class="max-w-7xl mx-auto px-4 sm:px-6 pt-20 pb-16 text-center">
+  <div class="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-1.5 mb-8">
+    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse" aria-hidden="true"></div>
+    <span class="text-sm text-blue-300 font-medium">Live on Railway · Deployed by AI Workers</span>
+  </div>
+  <h1 class="text-5xl sm:text-7xl font-extrabold tracking-tight mb-6 leading-none">
+    <span class="gradient-text">ShipAPI</span>
+  </h1>
+  <p class="text-xl sm:text-2xl text-gray-300 max-w-3xl mx-auto mb-4 leading-relaxed">
+    A fully functional inventory management REST API —<br class="hidden sm:block" />
+    written, tested, and deployed <strong class="text-white">entirely by AI workers</strong>.
+  </p>
+  <p class="text-gray-500 mb-10 max-w-2xl mx-auto leading-relaxed">
+    50 products · 20 categories · 3 warehouses · JWT + API key auth ·
+    audit trail · rate limiting · stock alerts — all built by
+    <a href="https://workermill.com" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 transition-colors underline decoration-blue-400/40 hover:decoration-blue-300/60">WorkerMill</a>
+    AI agents across 5 epics and 30 stories.
+  </p>
+  <div class="flex flex-wrap items-center justify-center gap-3" role="navigation" aria-label="Quick links">
+    <a href="/docs"
+       class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white font-medium px-6 py-3 rounded-xl transition-colors shadow-lg shadow-blue-900/30">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Swagger UI
+    </a>
+    <a href="/redoc"
+       class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium px-6 py-3 rounded-xl transition-colors border border-gray-700/50">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      ReDoc
+    </a>
+    <a href="https://github.com/workermill-examples/shipapi" target="_blank" rel="noopener noreferrer"
+       class="inline-flex items-center gap-2 bg-gray-800 hover:bg-gray-700 text-gray-200 font-medium px-6 py-3 rounded-xl transition-colors border border-gray-700/50">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+      View Source
+    </a>
+  </div>
+</header>
+
+<!-- ===== LIVE STATS ===== -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-16" aria-labelledby="stats-heading">
+  <div class="text-center mb-10">
+    <h2 id="stats-heading" class="text-2xl sm:text-3xl font-bold text-white mb-2">Live Stats</h2>
+    <p class="text-gray-500 text-sm">
+      Real-time data from
+      <code class="bg-gray-800 px-1.5 py-0.5 rounded text-gray-300 text-xs">/api/v1/showcase/stats</code>
+    </p>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4" id="stats-grid" role="region" aria-label="Live statistics">
+    <div class="stat-card bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-blue-400 loading-pulse" id="stat-products" aria-live="polite">—</div>
+      <div class="text-xs text-gray-500 mt-2 uppercase tracking-wider">Products</div>
+    </div>
+    <div class="stat-card bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-purple-400 loading-pulse" id="stat-categories" aria-live="polite">—</div>
+      <div class="text-xs text-gray-500 mt-2 uppercase tracking-wider">Categories</div>
+    </div>
+    <div class="stat-card bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-emerald-400 loading-pulse" id="stat-warehouses" aria-live="polite">—</div>
+      <div class="text-xs text-gray-500 mt-2 uppercase tracking-wider">Warehouses</div>
+    </div>
+    <div class="stat-card bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-amber-400 loading-pulse" id="stat-alerts" aria-live="polite">—</div>
+      <div class="text-xs text-gray-500 mt-2 uppercase tracking-wider">Stock Alerts</div>
+    </div>
+    <div class="stat-card bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-cyan-400 loading-pulse" id="stat-transfers" aria-live="polite">—</div>
+      <div class="text-xs text-gray-500 mt-2 uppercase tracking-wider">Transfers</div>
+    </div>
+    <div class="stat-card bg-gray-900 border border-gray-800 rounded-xl p-5 text-center">
+      <div class="text-3xl font-bold text-rose-400 loading-pulse" id="stat-audit" aria-live="polite">—</div>
+      <div class="text-xs text-gray-500 mt-2 uppercase tracking-wider">Audit Entries</div>
+    </div>
+  </div>
+  <div class="text-center mt-4">
+    <span id="stats-health" class="text-xs text-gray-600"></span>
+  </div>
+</section>
+
+<!-- ===== TECH STACK ===== -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 border-t border-gray-800/50" aria-labelledby="stack-heading">
+  <div class="text-center mb-10">
+    <h2 id="stack-heading" class="text-2xl sm:text-3xl font-bold text-white mb-2">Tech Stack</h2>
+    <p class="text-gray-500">Production-grade Python API — every technology chosen and implemented by AI workers</p>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
+    <div class="tech-card bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+      <div class="text-3xl mb-3" aria-hidden="true">⚡</div>
+      <div class="font-semibold text-white text-sm">FastAPI</div>
+      <div class="text-xs text-gray-500 mt-1">Async REST</div>
+    </div>
+    <div class="tech-card bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+      <div class="text-3xl mb-3" aria-hidden="true">🗄️</div>
+      <div class="font-semibold text-white text-sm">SQLAlchemy 2</div>
+      <div class="text-xs text-gray-500 mt-1">Async ORM</div>
+    </div>
+    <div class="tech-card bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+      <div class="text-3xl mb-3" aria-hidden="true">🐘</div>
+      <div class="font-semibold text-white text-sm">PostgreSQL</div>
+      <div class="text-xs text-gray-500 mt-1">Neon Serverless</div>
+    </div>
+    <div class="tech-card bg-gray-900 border border-gray-800 rounded-xl p-6 text-center">
+      <div class="text-3xl mb-3" aria-hidden="true">🐍</div>
+      <div class="font-semibold text-white text-sm">Python 3.13</div>
+      <div class="text-xs text-gray-500 mt-1">Latest syntax</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== INTERACTIVE EXPLORER ===== -->
+<section id="explorer" class="max-w-7xl mx-auto px-4 sm:px-6 py-16 border-t border-gray-800/50" aria-labelledby="explorer-heading">
+  <div class="text-center mb-10">
+    <h2 id="explorer-heading" class="text-2xl sm:text-3xl font-bold text-white mb-2">Interactive API Explorer</h2>
+    <p class="text-gray-500">Pre-authenticated with the demo API key — make real calls to live endpoints</p>
+  </div>
+
+  <div class="grid lg:grid-cols-2 gap-6">
+    <!-- Endpoint list -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden" role="region" aria-label="API endpoints">
+      <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between">
+        <span class="font-medium text-sm text-gray-300">Endpoints</span>
+        <div class="badge bg-green-500/10 border border-green-500/20 text-green-400 text-xs" role="status">
+          <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" aria-hidden="true"></div>
+          Live
+        </div>
+      </div>
+      <div class="divide-y divide-gray-800/60" role="list">
+        <div class="endpoint-row px-5 py-4" role="listitem" onclick="tryEndpoint('products')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')tryEndpoint('products')" aria-label="Try GET /api/v1/products">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <span class="badge bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">GET</span>
+              <code class="text-sm text-gray-200">/api/v1/products</code>
+            </div>
+            <button
+              class="copy-btn text-xs text-gray-500 hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-800"
+              onclick="event.stopPropagation(); copyCommand('products', this)"
+              aria-label="Copy curl command for products endpoint"
+            >copy curl</button>
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5">List all active products with pagination</p>
+        </div>
+        <div class="endpoint-row px-5 py-4" role="listitem" onclick="tryEndpoint('categories')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')tryEndpoint('categories')" aria-label="Try GET /api/v1/categories">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <span class="badge bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">GET</span>
+              <code class="text-sm text-gray-200">/api/v1/categories</code>
+            </div>
+            <button
+              class="copy-btn text-xs text-gray-500 hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-800"
+              onclick="event.stopPropagation(); copyCommand('categories', this)"
+              aria-label="Copy curl command for categories endpoint"
+            >copy curl</button>
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5">List product categories with hierarchy</p>
+        </div>
+        <div class="endpoint-row px-5 py-4" role="listitem" onclick="tryEndpoint('warehouses')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')tryEndpoint('warehouses')" aria-label="Try GET /api/v1/warehouses">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <span class="badge bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">GET</span>
+              <code class="text-sm text-gray-200">/api/v1/warehouses</code>
+            </div>
+            <button
+              class="copy-btn text-xs text-gray-500 hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-800"
+              onclick="event.stopPropagation(); copyCommand('warehouses', this)"
+              aria-label="Copy curl command for warehouses endpoint"
+            >copy curl</button>
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5">List warehouses with stock summaries</p>
+        </div>
+        <div class="endpoint-row px-5 py-4" role="listitem" onclick="tryEndpoint('alerts')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')tryEndpoint('alerts')" aria-label="Try GET /api/v1/stock/alerts">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <span class="badge bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">GET</span>
+              <code class="text-sm text-gray-200">/api/v1/stock/alerts</code>
+            </div>
+            <button
+              class="copy-btn text-xs text-gray-500 hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-800"
+              onclick="event.stopPropagation(); copyCommand('alerts', this)"
+              aria-label="Copy curl command for stock alerts endpoint"
+            >copy curl</button>
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5">Products below minimum stock threshold</p>
+        </div>
+        <div class="endpoint-row px-5 py-4" role="listitem" onclick="tryEndpoint('health')" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' ')tryEndpoint('health')" aria-label="Try GET /api/v1/health">
+          <div class="flex items-center justify-between mb-1">
+            <div class="flex items-center gap-2">
+              <span class="badge bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-semibold">GET</span>
+              <code class="text-sm text-gray-200">/api/v1/health</code>
+            </div>
+            <button
+              class="copy-btn text-xs text-gray-500 hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-800"
+              onclick="event.stopPropagation(); copyCommand('health', this)"
+              aria-label="Copy curl command for health endpoint"
+            >copy curl</button>
+          </div>
+          <p class="text-xs text-gray-500 mt-0.5">Service health check and database status</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Response panel -->
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden flex flex-col" role="region" aria-label="API response">
+      <div class="px-5 py-4 border-b border-gray-800 flex items-center justify-between flex-shrink-0">
+        <span class="font-medium text-sm text-gray-300 truncate" id="response-title">Select an endpoint to try it</span>
+        <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+          <span id="response-status" class="text-xs font-mono" aria-live="polite"></span>
+          <span id="response-time" class="text-xs text-gray-600" aria-live="polite"></span>
+        </div>
+      </div>
+      <div class="flex-1 p-4 explorer-response">
+        <pre id="response-body" class="text-sm text-gray-600 italic m-0">// Click an endpoint to see the live response here</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== BUILD HISTORY ===== -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 border-t border-gray-800/50" aria-labelledby="build-heading">
+  <div class="text-center mb-12">
+    <h2 id="build-heading" class="text-2xl sm:text-3xl font-bold text-white mb-2">How It Was Built</h2>
+    <p class="text-gray-500">5 epics · 30 stories · 344 tests · zero human-written lines of code</p>
+  </div>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <article class="epic-card bg-gray-900 border border-gray-800 hover:border-blue-500/30 rounded-xl p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-blue-500/15 border border-blue-500/25 flex items-center justify-center text-blue-400 text-sm font-bold" aria-hidden="true">1</div>
+        <div>
+          <div class="font-semibold text-white text-sm">Core Foundation</div>
+          <div class="text-xs text-gray-500">Epic SA-1 · 6 stories</div>
+        </div>
+      </div>
+      <p class="text-sm text-gray-400 leading-relaxed">Database setup, async SQLAlchemy, Alembic migrations, pydantic-settings config, health endpoint, CORS &amp; middleware stack, Railway CI/CD pipeline.</p>
+    </article>
+    <article class="epic-card bg-gray-900 border border-gray-800 hover:border-purple-500/30 rounded-xl p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-purple-500/15 border border-purple-500/25 flex items-center justify-center text-purple-400 text-sm font-bold" aria-hidden="true">2</div>
+        <div>
+          <div class="font-semibold text-white text-sm">Authentication</div>
+          <div class="text-xs text-gray-500">Epic SA-2 · 6 stories</div>
+        </div>
+      </div>
+      <p class="text-sm text-gray-400 leading-relaxed">JWT access &amp; refresh tokens, API key auth (SHA-256 hashed), bcrypt password hashing, role-based access control (user/admin), rate limiting.</p>
+    </article>
+    <article class="epic-card bg-gray-900 border border-gray-800 hover:border-emerald-500/30 rounded-xl p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/15 border border-emerald-500/25 flex items-center justify-center text-emerald-400 text-sm font-bold" aria-hidden="true">3</div>
+        <div>
+          <div class="font-semibold text-white text-sm">Product Catalog</div>
+          <div class="text-xs text-gray-500">Epic SA-3 · 6 stories</div>
+        </div>
+      </div>
+      <p class="text-sm text-gray-400 leading-relaxed">Category hierarchy with parent/child, product CRUD with soft delete, full-text search via PostgreSQL tsvector &amp; GIN index, price &amp; category filters.</p>
+    </article>
+    <article class="epic-card bg-gray-900 border border-gray-800 hover:border-amber-500/30 rounded-xl p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-amber-400 text-sm font-bold" aria-hidden="true">4</div>
+        <div>
+          <div class="font-semibold text-white text-sm">Inventory Operations</div>
+          <div class="text-xs text-gray-500">Epic SA-4 · 6 stories</div>
+        </div>
+      </div>
+      <p class="text-sm text-gray-400 leading-relaxed">Warehouse management, stock levels with min-threshold alerts, atomic stock transfers with <code class="text-amber-300 text-xs bg-amber-500/10 px-1 py-0.5 rounded">SELECT FOR UPDATE</code> locking, full audit trail.</p>
+    </article>
+    <article class="epic-card bg-gray-900 border border-gray-800 hover:border-rose-500/30 rounded-xl p-6">
+      <div class="flex items-center gap-3 mb-4">
+        <div class="w-8 h-8 rounded-lg bg-rose-500/15 border border-rose-500/25 flex items-center justify-center text-rose-400 text-sm font-bold" aria-hidden="true">5</div>
+        <div>
+          <div class="font-semibold text-white text-sm">Showcase &amp; Demo</div>
+          <div class="text-xs text-gray-500">Epic SA-5 · 6 stories</div>
+        </div>
+      </div>
+      <p class="text-sm text-gray-400 leading-relaxed">Seed data (50 products, 20 categories, 3 warehouses), demo API key, this landing page &amp; interactive explorer, public stats endpoint.</p>
+    </article>
+    <div class="bg-gray-900 border border-blue-500/20 rounded-xl p-6 flex flex-col items-center justify-center text-center" aria-label="Test count: 344 passing">
+      <div class="text-5xl font-extrabold text-white mb-1 tabular-nums">344</div>
+      <div class="text-sm text-gray-400 mb-3">Tests passing</div>
+      <div class="text-xs text-gray-600 leading-relaxed">Every test written, run, and maintained<br/>by AI workers across unit, integration,<br/>and end-to-end suites</div>
+    </div>
+  </div>
+  <div class="mt-10 text-center">
+    <a href="https://workermill.com" target="_blank" rel="noopener noreferrer"
+       class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-300 transition-colors group">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Learn how WorkerMill builds software with AI workers
+      <span class="group-hover:translate-x-0.5 transition-transform" aria-hidden="true">→</span>
+    </a>
+  </div>
+</section>
+
+<!-- ===== CODE QUALITY ===== -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 border-t border-gray-800/50" aria-labelledby="quality-heading">
+  <div class="text-center mb-10">
+    <h2 id="quality-heading" class="text-2xl sm:text-3xl font-bold text-white mb-2">Code Quality</h2>
+    <p class="text-gray-500">Production standards enforced from day one, by AI workers</p>
+  </div>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-4xl mx-auto">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center hover:border-gray-700 transition-colors">
+      <div class="text-2xl mb-2" aria-hidden="true">✅</div>
+      <div class="font-semibold text-white text-sm mb-1">344 Tests</div>
+      <div class="text-xs text-gray-500">pytest · ≥80% coverage</div>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center hover:border-gray-700 transition-colors">
+      <div class="text-2xl mb-2" aria-hidden="true">🔍</div>
+      <div class="font-semibold text-white text-sm mb-1">mypy Strict</div>
+      <div class="text-xs text-gray-500">Full type annotations</div>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center hover:border-gray-700 transition-colors">
+      <div class="text-2xl mb-2" aria-hidden="true">⚡</div>
+      <div class="font-semibold text-white text-sm mb-1">ruff</div>
+      <div class="text-xs text-gray-500">Linting &amp; formatting</div>
+    </div>
+    <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 text-center hover:border-gray-700 transition-colors">
+      <div class="text-2xl mb-2" aria-hidden="true">🚀</div>
+      <div class="font-semibold text-white text-sm mb-1">CI/CD</div>
+      <div class="text-xs text-gray-500">GitHub Actions · Railway</div>
+    </div>
+  </div>
+  <div class="mt-8 max-w-2xl mx-auto bg-gray-900 border border-gray-800 rounded-xl p-5">
+    <div class="text-xs text-gray-500 mb-3 uppercase tracking-wider">Run the test suite</div>
+    <pre class="text-xs overflow-x-auto m-0"><code class="language-bash">git clone https://github.com/workermill-examples/shipapi
+cd shipapi
+uv sync
+coverage run -m pytest && coverage report  # ≥80% enforced</code></pre>
+  </div>
+</section>
+
+<!-- ===== DEMO ACCESS ===== -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 py-16 border-t border-gray-800/50" aria-labelledby="demo-heading">
+  <div class="text-center mb-10">
+    <h2 id="demo-heading" class="text-2xl sm:text-3xl font-bold text-white mb-2">Demo Access</h2>
+    <p class="text-gray-500">Use these credentials to explore the full API — pre-seeded with realistic data</p>
+  </div>
+  <div class="max-w-2xl mx-auto">
+    <div class="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+      <div class="px-6 py-5 border-b border-gray-800 grid grid-cols-3 gap-4 text-sm">
+        <div>
+          <div class="text-xs text-gray-500 uppercase tracking-wider mb-1.5">Email</div>
+          <code class="text-gray-200 text-xs">demo@workermill.com</code>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase tracking-wider mb-1.5">Password</div>
+          <code class="text-gray-200 text-xs">demo1234</code>
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 uppercase tracking-wider mb-1.5">Role</div>
+          <span class="badge bg-purple-500/10 border border-purple-500/20 text-purple-400 text-xs">admin</span>
+        </div>
+      </div>
+      <div class="px-6 py-5 border-b border-gray-800">
+        <div class="text-xs text-gray-500 uppercase tracking-wider mb-2">API Key</div>
+        <div class="flex items-center gap-2">
+          <code class="flex-1 bg-gray-800 rounded-lg px-3 py-2.5 text-xs text-green-400 break-all font-mono" id="api-key-display">sk_demo_shipapi_2026_showcase_key</code>
+          <button
+            onclick="copyApiKey()"
+            class="copy-btn flex-shrink-0 text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-2.5 rounded-lg transition-colors border border-gray-600/50"
+            id="copy-key-btn"
+            aria-label="Copy API key"
+          >Copy</button>
+        </div>
+      </div>
+      <div class="px-6 py-5">
+        <div class="text-xs text-gray-600 mb-3 uppercase tracking-wider">Quick start</div>
+        <pre class="m-0 overflow-x-auto"><code class="language-bash">curl https://shipapi.workermill.com/api/v1/products \
+  -H "X-API-Key: sk_demo_shipapi_2026_showcase_key"</code></pre>
+      </div>
+    </div>
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3">
+      <a href="/docs"
+         class="inline-flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-200 px-5 py-2.5 rounded-xl transition-colors border border-gray-700/50">
+        Open Swagger UI →
+      </a>
+      <a href="/redoc"
+         class="inline-flex items-center gap-2 text-sm bg-gray-800 hover:bg-gray-700 text-gray-200 px-5 py-2.5 rounded-xl transition-colors border border-gray-700/50">
+        Open ReDoc →
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer class="border-t border-gray-800/50 mt-8" role="contentinfo">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-md bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-xs" aria-hidden="true">S</div>
+      <span class="text-gray-500 text-sm">
+        ShipAPI — built by
+        <a href="https://workermill.com" target="_blank" rel="noopener noreferrer" class="text-gray-400 hover:text-white transition-colors">WorkerMill</a>
+        AI workers
+      </span>
+    </div>
+    <nav class="flex items-center gap-4 text-sm" aria-label="Footer navigation">
+      <a href="/api/v1/health" class="text-gray-600 hover:text-gray-400 transition-colors">Health</a>
+      <a href="/docs" class="text-gray-600 hover:text-gray-400 transition-colors">Docs</a>
+      <a href="/redoc" class="text-gray-600 hover:text-gray-400 transition-colors">ReDoc</a>
+      <a href="https://github.com/workermill-examples/shipapi" target="_blank" rel="noopener noreferrer" class="text-gray-600 hover:text-gray-400 transition-colors">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  const DEMO_API_KEY = 'sk_demo_shipapi_2026_showcase_key';
+
+  /** @type {Record<string, {path: string, auth: boolean, label: string}>} */
+  const ENDPOINTS = {
+    products:   { path: '/api/v1/products',     auth: true,  label: 'GET /api/v1/products' },
+    categories: { path: '/api/v1/categories',   auth: false, label: 'GET /api/v1/categories' },
+    warehouses: { path: '/api/v1/warehouses',   auth: true,  label: 'GET /api/v1/warehouses' },
+    alerts:     { path: '/api/v1/stock/alerts', auth: true,  label: 'GET /api/v1/stock/alerts' },
+    health:     { path: '/api/v1/health',       auth: false, label: 'GET /api/v1/health' },
+  };
+
+  // ── Live stats ─────────────────────────────────────────────────────────────
+
+  async function loadStats() {
+    try {
+      const res = await fetch('/api/v1/showcase/stats');
+      if (!res.ok) return;
+      const data = await res.json();
+      const mapping = [
+        ['stat-products',  'products'],
+        ['stat-categories','categories'],
+        ['stat-warehouses','warehouses'],
+        ['stat-alerts',    'stock_alerts'],
+        ['stat-transfers', 'stock_transfers'],
+        ['stat-audit',     'audit_log_entries'],
+      ];
+      mapping.forEach(([id, key]) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.classList.remove('loading-pulse');
+          el.textContent = Number(data[key]).toLocaleString();
+        }
+      });
+      const healthEl = document.getElementById('stats-health');
+      if (healthEl) {
+        healthEl.textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+      }
+    } catch (_) {
+      // Silently fail — stat cards remain showing "—"
+    }
+  }
+
+  // ── API Explorer ───────────────────────────────────────────────────────────
+
+  let activeRow = null;
+
+  async function tryEndpoint(key) {
+    const ep = ENDPOINTS[key];
+    if (!ep) return;
+
+    // Update active row styling
+    document.querySelectorAll('.endpoint-row').forEach(r => r.classList.remove('active'));
+    const rows = document.querySelectorAll('.endpoint-row');
+    const keys = Object.keys(ENDPOINTS);
+    const idx = keys.indexOf(key);
+    if (idx >= 0 && rows[idx]) rows[idx].classList.add('active');
+
+    const titleEl = document.getElementById('response-title');
+    const bodyEl  = document.getElementById('response-body');
+    const statusEl = document.getElementById('response-status');
+    const timeEl  = document.getElementById('response-time');
+
+    titleEl.textContent = ep.label;
+    bodyEl.className = 'text-sm text-gray-500 italic m-0';
+    bodyEl.innerHTML = '// Loading...';
+    statusEl.textContent = '';
+    timeEl.textContent = '';
+
+    const headers = {};
+    if (ep.auth) headers['X-API-Key'] = DEMO_API_KEY;
+
+    const start = performance.now();
+    try {
+      const res = await fetch(ep.path, { headers });
+      const ms = Math.round(performance.now() - start);
+      const json = await res.json();
+      const formatted = JSON.stringify(json, null, 2);
+
+      timeEl.textContent = ms + 'ms';
+      statusEl.textContent = res.status + ' ' + res.statusText;
+      statusEl.className = res.ok
+        ? 'text-xs font-mono text-green-400'
+        : 'text-xs font-mono text-red-400';
+
+      bodyEl.className = 'text-sm m-0';
+      bodyEl.innerHTML = '<code class="language-json">' +
+        formatted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') +
+        '</code>';
+      hljs.highlightElement(bodyEl.querySelector('code'));
+    } catch (err) {
+      statusEl.textContent = 'Error';
+      statusEl.className = 'text-xs font-mono text-red-400';
+      bodyEl.className = 'text-sm text-red-400 italic m-0';
+      bodyEl.textContent = '// ' + (err.message || 'Network error');
+    }
+  }
+
+  // ── Copy helpers ────────────────────────────────────────────────────────────
+
+  function copyToClipboard(text, btn, label) {
+    navigator.clipboard.writeText(text).then(() => {
+      if (btn) {
+        const orig = btn.textContent;
+        btn.textContent = label || 'Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.textContent = orig;
+          btn.classList.remove('copied');
+        }, 1500);
+      }
+    }).catch(() => {});
+  }
+
+  function copyCommand(key, btn) {
+    const ep = ENDPOINTS[key];
+    if (!ep) return;
+    const base = window.location.origin;
+    let cmd = 'curl ' + base + ep.path;
+    if (ep.auth) cmd += ' \\\n  -H "X-API-Key: ' + DEMO_API_KEY + '"';
+    copyToClipboard(cmd, btn, 'Copied!');
+  }
+
+  function copyApiKey() {
+    const btn = document.getElementById('copy-key-btn');
+    copyToClipboard(DEMO_API_KEY, btn, 'Copied!');
+  }
+
+  // Expose to global scope for inline onclick handlers
+  window.tryEndpoint = tryEndpoint;
+  window.copyCommand = copyCommand;
+  window.copyApiKey = copyApiKey;
+
+  // ── Init ───────────────────────────────────────────────────────────────────
+
+  document.addEventListener('DOMContentLoaded', function () {
+    hljs.highlightAll();
+    loadStats();
+  });
+}());
+</script>
+</body>
+</html>
