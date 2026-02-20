@@ -10,9 +10,11 @@ import asyncio
 import datetime
 import hashlib
 import os
+import ssl as _ssl
 import uuid
 from decimal import Decimal
 from typing import Any
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -1423,6 +1425,19 @@ async def seed_audit_logs(
 # ---------------------------------------------------------------------------
 
 
+def _asyncpg_url(url: str) -> tuple[str, dict]:
+    """Strip sslmode from URL and return connect_args for asyncpg."""
+    parts = urlsplit(url)
+    qs = parse_qs(parts.query)
+    connect_args: dict = {}
+    if "sslmode" in qs:
+        mode = qs.pop("sslmode")[0]
+        if mode in ("require", "verify-ca", "verify-full"):
+            connect_args["ssl"] = _ssl.create_default_context()
+        url = urlunsplit(parts._replace(query=urlencode(qs, doseq=True)))
+    return url, connect_args
+
+
 async def main() -> None:
     database_url = os.environ.get("DATABASE_URL")
     if not database_url:
@@ -1431,7 +1446,8 @@ async def main() -> None:
     print("ShipAPI Seed Script")
     print("=" * 50)
 
-    engine = create_async_engine(database_url, pool_pre_ping=True)
+    url, connect_args = _asyncpg_url(database_url)
+    engine = create_async_engine(url, pool_pre_ping=True, connect_args=connect_args)
     session_factory: async_sessionmaker[AsyncSession] = async_sessionmaker(
         engine,
         class_=AsyncSession,
