@@ -1,6 +1,8 @@
 import asyncio
 import os
+import ssl as _ssl
 from logging.config import fileConfig
+from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -28,6 +30,19 @@ if config.config_file_name is not None:
 
 # Metadata for autogenerate support
 target_metadata = Base.metadata
+
+
+def _asyncpg_connect_args(url: str) -> tuple[str, dict]:
+    """Strip ``sslmode`` from URL and return connect_args for asyncpg."""
+    parts = urlsplit(url)
+    qs = parse_qs(parts.query)
+    connect_args: dict = {}
+    if "sslmode" in qs:
+        mode = qs.pop("sslmode")[0]
+        if mode in ("require", "verify-ca", "verify-full"):
+            connect_args["ssl"] = _ssl.create_default_context()
+        url = urlunsplit(parts._replace(query=urlencode(qs, doseq=True)))
+    return url, connect_args
 
 
 def get_url() -> str:
@@ -71,9 +86,11 @@ def do_run_migrations(connection) -> None:
 
 async def run_async_migrations() -> None:
     """Run migrations using an async engine (required for asyncpg)."""
+    url, connect_args = _asyncpg_connect_args(get_url())
     connectable = create_async_engine(
-        get_url(),
+        url,
         poolclass=pool.NullPool,
+        connect_args=connect_args,
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
