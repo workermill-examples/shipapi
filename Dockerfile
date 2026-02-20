@@ -12,12 +12,11 @@ ENV UV_LINK_MODE=copy
 
 WORKDIR /app
 
-# Install project dependencies first (before copying app code)
-# This layer is cached as long as pyproject.toml / uv.lock don't change
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-install-project --no-dev
+# Copy dependency files first (cached layer)
+COPY pyproject.toml uv.lock ./
+
+# Install project dependencies (before copying app code)
+RUN uv sync --frozen --no-install-project --no-dev
 
 # Copy application source and supporting directories
 COPY src/ ./src/
@@ -26,10 +25,7 @@ COPY seed/ ./seed/
 COPY alembic.ini ./
 
 # Install the project itself into the venv
-RUN --mount=type=cache,target=/root/.cache/uv \
-    --mount=type=bind,source=uv.lock,target=uv.lock \
-    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
-    uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev
 
 # =============================================================================
 # Runtime stage — minimal image with non-root user
