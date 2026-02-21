@@ -4,7 +4,7 @@
 
 ShipAPI is a showcase application demonstrating [WorkerMill](https://workermill.com) — an autonomous AI coding platform that takes Jira/Linear/GitHub tickets and ships production code. Every line of code in this repository was written, tested, and deployed by WorkerMill's AI workers.
 
-[Live Demo](https://shipapi.up.railway.app/docs) | [WorkerMill Platform](https://workermill.com) | [Documentation](https://workermill.com/docs)
+[Live Demo](https://shipapi.workermill.com/docs) | [WorkerMill Platform](https://workermill.com) | [Documentation](https://workermill.com/docs)
 
 [![CI](https://github.com/workermill-examples/shipapi/actions/workflows/ci.yml/badge.svg)](https://github.com/workermill-examples/shipapi/actions/workflows/ci.yml)
 [![Deploy](https://github.com/workermill-examples/shipapi/actions/workflows/deploy.yml/badge.svg)](https://github.com/workermill-examples/shipapi/actions/workflows/deploy.yml)
@@ -60,7 +60,7 @@ Each epic was planned by a WorkerMill planner agent, decomposed into parallel st
 
 ## Try the Demo
 
-Visit the [Swagger UI](https://shipapi.up.railway.app/docs) or [ReDoc](https://shipapi.up.railway.app/redoc) to explore the live API.
+Visit the [Swagger UI](https://shipapi.workermill.com/docs) or [ReDoc](https://shipapi.workermill.com/redoc) to explore the live API.
 
 | | |
 |-|-|
