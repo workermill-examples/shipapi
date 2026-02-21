@@ -283,3 +283,37 @@ openssl rand -hex 32
 ```
 
 Paste the output into `JWT_SECRET_KEY` in Railway's environment variables.
+
+---
+
+## Pre-Commit Quality Gate
+
+**Run all 6 commands before every commit. Do NOT push until all pass with 0 errors.**
+
+```bash
+uv run ruff format .
+uv run ruff check . --fix
+uv run ruff check .
+uv run ruff format --check .
+uv run mypy src --strict
+uv run pytest tests/ -v
+```
+
+### What Each Step Does
+
+| Step | Command | Purpose |
+|------|---------|---------|
+| 1 | `uv run ruff format .` | Auto-format all source files |
+| 2 | `uv run ruff check . --fix` | Fix auto-fixable lint errors (e.g. unsorted imports) |
+| 3 | `uv run ruff check .` | Verify no remaining lint errors |
+| 4 | `uv run ruff format --check .` | Confirm formatting is clean (CI-safe, no writes) |
+| 5 | `uv run mypy src --strict` | Strict type checking — 0 errors required |
+| 6 | `uv run pytest tests/ -v` | All tests must pass |
+
+### Common Failures
+
+- **`I001` unsorted imports** — step 2 (`--fix`) resolves this automatically; re-run step 3 to confirm
+- **`type-arg` mypy error** — bare `dict` must be `dict[str, Any]`; add `from typing import Any` if missing
+- **Coverage below 80%** — add tests or run `coverage run -m pytest && coverage report` to identify gaps
+
+CI enforces the same checks. A push that skips this gate will fail the pipeline and block deployment.
