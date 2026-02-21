@@ -13,7 +13,6 @@ Coverage
 import pytest
 from httpx import AsyncClient
 
-
 # ---------------------------------------------------------------------------
 # Landing page — HTTP response basics
 # ---------------------------------------------------------------------------
@@ -229,9 +228,7 @@ async def test_stats_non_negative(async_client: AsyncClient) -> None:
 
 
 @pytest.mark.asyncio
-async def test_stats_reflects_seeded_data(
-    async_client: AsyncClient, seeded_db: dict
-) -> None:  # noqa: ARG001
+async def test_stats_reflects_seeded_data(async_client: AsyncClient, seeded_db: dict) -> None:  # noqa: ARG001
     """Stats counts match seeded data: 3 products, 2 categories, 2 warehouses."""
     response = await async_client.get("/api/v1/showcase/stats")
     body = response.json()
@@ -317,9 +314,7 @@ async def test_stats_in_openapi_spec(async_client: AsyncClient) -> None:
     """The /api/v1/showcase/stats endpoint appears in the generated OpenAPI spec."""
     response = await async_client.get("/openapi.json")
     paths = response.json().get("paths", {})
-    assert "/api/v1/showcase/stats" in paths, (
-        "Expected /api/v1/showcase/stats in OpenAPI paths"
-    )
+    assert "/api/v1/showcase/stats" in paths, "Expected /api/v1/showcase/stats in OpenAPI paths"
 
 
 @pytest.mark.asyncio
