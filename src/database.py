@@ -1,5 +1,6 @@
 import ssl as _ssl
 from collections.abc import AsyncGenerator
+from typing import Any
 from urllib.parse import parse_qs, urlencode, urlsplit, urlunsplit
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -7,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from src.config import settings
 
 
-def _asyncpg_url(url: str) -> tuple[str, dict]:
+def _asyncpg_url(url: str) -> tuple[str, dict[str, Any]]:
     """Convert a database URL for asyncpg compatibility.
 
     asyncpg does not accept ``sslmode`` as a query parameter — it expects
@@ -17,7 +18,7 @@ def _asyncpg_url(url: str) -> tuple[str, dict]:
     """
     parts = urlsplit(url)
     qs = parse_qs(parts.query)
-    connect_args: dict = {}
+    connect_args: dict[str, Any] = {}
 
     if "sslmode" in qs:
         mode = qs.pop("sslmode")[0]
