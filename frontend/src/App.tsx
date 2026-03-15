@@ -4,53 +4,13 @@ import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
 import { LoginPage } from '@/pages/LoginPage';
+import DashboardPage from '@/pages/DashboardPage';
+import ProductsPage from '@/pages/ProductsPage';
+import CategoriesPage from '@/pages/CategoriesPage';
+import WarehousesPage from '@/pages/WarehousesPage';
+import StockPage from '@/pages/StockPage';
 
 // Placeholder components for pages not yet implemented
-function DashboardPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
-      <p className="text-muted-foreground">Dashboard coming soon...</p>
-    </div>
-  );
-}
-
-function ProductsPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Products</h1>
-      <p className="text-muted-foreground">Products page coming soon...</p>
-    </div>
-  );
-}
-
-function CategoriesPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Categories</h1>
-      <p className="text-muted-foreground">Categories page coming soon...</p>
-    </div>
-  );
-}
-
-function WarehousesPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Warehouses</h1>
-      <p className="text-muted-foreground">Warehouses page coming soon...</p>
-    </div>
-  );
-}
-
-function StockPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Stock Management</h1>
-      <p className="text-muted-foreground">Stock management page coming soon...</p>
-    </div>
-  );
-}
-
 function AuditPage() {
   return (
     <div>

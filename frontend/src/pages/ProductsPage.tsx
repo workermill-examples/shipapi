@@ -183,8 +183,10 @@ export default function ProductsPage() {
       resetForm();
       setSelectedProduct(null);
       refetchProducts();
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || 'An error occurred';
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'detail' in error.response.data
+        ? String(error.response.data.detail)
+        : 'An error occurred';
       toast.error(message);
     }
   };
@@ -199,8 +201,10 @@ export default function ProductsPage() {
       setIsDeleteDialogOpen(false);
       setSelectedProduct(null);
       refetchProducts();
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || 'Failed to delete product';
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'detail' in error.response.data
+        ? String(error.response.data.detail)
+        : 'Failed to delete product';
       toast.error(message);
     }
   };
@@ -233,7 +237,7 @@ export default function ProductsPage() {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchTerm, selectedCategory, statusFilter, sortBy]);
+  }, [searchTerm, selectedCategory, statusFilter, sortBy, refetchProducts]);
 
   // Handle pagination
   const handlePageChange = (page: number) => {

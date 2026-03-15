@@ -143,8 +143,10 @@ export default function CategoriesPage() {
       resetForm();
       setSelectedCategory(null);
       refetchCategories();
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || 'An error occurred';
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'detail' in error.response.data
+        ? String(error.response.data.detail)
+        : 'An error occurred';
       toast.error(message);
     }
   };
@@ -159,8 +161,10 @@ export default function CategoriesPage() {
       setIsDeleteDialogOpen(false);
       setSelectedCategory(null);
       refetchCategories();
-    } catch (error: any) {
-      const message = error?.response?.data?.detail || 'Failed to delete category';
+    } catch (error: unknown) {
+      const message = error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'detail' in error.response.data
+        ? String(error.response.data.detail)
+        : 'Failed to delete category';
       toast.error(message);
     }
   };
