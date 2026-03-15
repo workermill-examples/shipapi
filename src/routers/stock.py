@@ -52,9 +52,7 @@ def list_stock_levels(
     total = total_result.scalar()
 
     # Get stock levels for current page
-    stock_levels_result = db.execute(
-        query.order_by(StockLevel.created_at.desc()).offset(offset).limit(per_page)
-    )
+    stock_levels_result = db.execute(query.order_by(StockLevel.created_at.desc()).offset(offset).limit(per_page))
     stock_levels = stock_levels_result.scalars().all()
 
     return {
@@ -80,13 +78,13 @@ def get_low_stock_alerts(
     query = select(StockLevel).where(StockLevel.quantity < StockLevel.low_stock_threshold)
 
     # Get total count
-    total_result = db.execute(select(func.count(StockLevel.id)).where(StockLevel.quantity < StockLevel.low_stock_threshold))
+    total_result = db.execute(
+        select(func.count(StockLevel.id)).where(StockLevel.quantity < StockLevel.low_stock_threshold)
+    )
     total = total_result.scalar()
 
     # Get low stock items for current page
-    stock_levels_result = db.execute(
-        query.order_by(StockLevel.quantity.asc()).offset(offset).limit(per_page)
-    )
+    stock_levels_result = db.execute(query.order_by(StockLevel.quantity.asc()).offset(offset).limit(per_page))
     stock_levels = stock_levels_result.scalars().all()
 
     return {
@@ -125,10 +123,8 @@ def adjust_stock(
     )
     stock_level = stock_level_result.scalar_one_or_none()
 
-    old_quantity = 0
     if stock_level:
         # Update existing stock level
-        old_quantity = stock_level.quantity
         stock_level.quantity = stock_data.quantity
         stock_level.low_stock_threshold = stock_data.low_stock_threshold
     else:
@@ -283,8 +279,7 @@ def get_transfer_history(
         query = query.where(StockTransfer.product_id == product_id)
     if warehouse_id:
         query = query.where(
-            (StockTransfer.from_warehouse_id == warehouse_id) |
-            (StockTransfer.to_warehouse_id == warehouse_id)
+            (StockTransfer.from_warehouse_id == warehouse_id) | (StockTransfer.to_warehouse_id == warehouse_id)
         )
 
     # Get total count
@@ -293,17 +288,14 @@ def get_transfer_history(
         count_query = count_query.where(StockTransfer.product_id == product_id)
     if warehouse_id:
         count_query = count_query.where(
-            (StockTransfer.from_warehouse_id == warehouse_id) |
-            (StockTransfer.to_warehouse_id == warehouse_id)
+            (StockTransfer.from_warehouse_id == warehouse_id) | (StockTransfer.to_warehouse_id == warehouse_id)
         )
 
     total_result = db.execute(count_query)
     total = total_result.scalar()
 
     # Get transfers for current page
-    transfers_result = db.execute(
-        query.order_by(StockTransfer.created_at.desc()).offset(offset).limit(per_page)
-    )
+    transfers_result = db.execute(query.order_by(StockTransfer.created_at.desc()).offset(offset).limit(per_page))
     transfers = transfers_result.scalars().all()
 
     return {

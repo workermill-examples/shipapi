@@ -33,9 +33,7 @@ def list_warehouses(
     total = total_result.scalar()
 
     # Get warehouses for current page
-    warehouses_result = db.execute(
-        select(Warehouse).order_by(Warehouse.name).offset(offset).limit(per_page)
-    )
+    warehouses_result = db.execute(select(Warehouse).order_by(Warehouse.name).offset(offset).limit(per_page))
     warehouses = warehouses_result.scalars().all()
 
     return {
@@ -159,15 +157,11 @@ def delete_warehouse(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Warehouse not found")
 
     # Check if warehouse has stock levels
-    stock_count_result = db.execute(
-        select(func.count(StockLevel.id)).where(StockLevel.warehouse_id == warehouse.id)
-    )
+    stock_count_result = db.execute(select(func.count(StockLevel.id)).where(StockLevel.warehouse_id == warehouse.id))
     stock_count = stock_count_result.scalar()
 
     if stock_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete warehouse with stock levels"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete warehouse with stock levels")
 
     # Delete warehouse
     db.delete(warehouse)

@@ -1,10 +1,9 @@
 """Tests for warehouse endpoints."""
+
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 
-from src.models.stock import StockLevel
 from src.models.warehouse import Warehouse
 
 
@@ -58,11 +57,7 @@ def test_list_warehouses_no_auth(client: TestClient):
 
 def test_create_warehouse_success(client: TestClient, admin_headers: dict[str, str]):
     """Test successful warehouse creation."""
-    warehouse_data = {
-        "name": "Test Warehouse",
-        "code": "TEST01",
-        "address": "123 Test Street, Test City, TC 12345"
-    }
+    warehouse_data = {"name": "Test Warehouse", "code": "TEST01", "address": "123 Test Street, Test City, TC 12345"}
 
     response = client.post("/api/v1/warehouses", json=warehouse_data, headers=admin_headers)
 
@@ -81,11 +76,7 @@ def test_create_warehouse_success(client: TestClient, admin_headers: dict[str, s
 def test_create_warehouse_duplicate_code(client: TestClient, admin_headers: dict[str, str]):
     """Test creating warehouse with duplicate code."""
     # First create a warehouse
-    warehouse_data = {
-        "name": "First Warehouse",
-        "code": "UNIQUE01",
-        "address": "123 First Street"
-    }
+    warehouse_data = {"name": "First Warehouse", "code": "UNIQUE01", "address": "123 First Street"}
     response = client.post("/api/v1/warehouses", json=warehouse_data, headers=admin_headers)
     assert response.status_code == 201
 
@@ -93,7 +84,7 @@ def test_create_warehouse_duplicate_code(client: TestClient, admin_headers: dict
     duplicate_data = {
         "name": "Second Warehouse",
         "code": "UNIQUE01",  # Same code
-        "address": "456 Second Street"
+        "address": "456 Second Street",
     }
 
     response = client.post("/api/v1/warehouses", json=duplicate_data, headers=admin_headers)
@@ -105,37 +96,29 @@ def test_create_warehouse_duplicate_code(client: TestClient, admin_headers: dict
 def test_create_warehouse_validation_errors(client: TestClient, admin_headers: dict[str, str]):
     """Test warehouse creation validation errors."""
     # Empty name
-    response = client.post("/api/v1/warehouses", json={
-        "name": "",
-        "code": "TEST02",
-        "address": "123 Test St"
-    }, headers=admin_headers)
+    response = client.post(
+        "/api/v1/warehouses", json={"name": "", "code": "TEST02", "address": "123 Test St"}, headers=admin_headers
+    )
     assert response.status_code == 422
 
     # Empty code
-    response = client.post("/api/v1/warehouses", json={
-        "name": "Test Warehouse",
-        "code": "",
-        "address": "123 Test St"
-    }, headers=admin_headers)
+    response = client.post(
+        "/api/v1/warehouses",
+        json={"name": "Test Warehouse", "code": "", "address": "123 Test St"},
+        headers=admin_headers,
+    )
     assert response.status_code == 422
 
     # Empty address
-    response = client.post("/api/v1/warehouses", json={
-        "name": "Test Warehouse",
-        "code": "TEST03",
-        "address": ""
-    }, headers=admin_headers)
+    response = client.post(
+        "/api/v1/warehouses", json={"name": "Test Warehouse", "code": "TEST03", "address": ""}, headers=admin_headers
+    )
     assert response.status_code == 422
 
 
 def test_create_warehouse_non_admin(client: TestClient, regular_user_headers: dict[str, str]):
     """Test creating warehouse fails for non-admin user."""
-    warehouse_data = {
-        "name": "Test Warehouse",
-        "code": "TEST04",
-        "address": "123 Test Street"
-    }
+    warehouse_data = {"name": "Test Warehouse", "code": "TEST04", "address": "123 Test Street"}
 
     response = client.post("/api/v1/warehouses", json=warehouse_data, headers=regular_user_headers)
 
@@ -144,18 +127,16 @@ def test_create_warehouse_non_admin(client: TestClient, regular_user_headers: di
 
 def test_create_warehouse_no_auth(client: TestClient):
     """Test creating warehouse fails without authentication."""
-    warehouse_data = {
-        "name": "Test Warehouse",
-        "code": "TEST05",
-        "address": "123 Test Street"
-    }
+    warehouse_data = {"name": "Test Warehouse", "code": "TEST05", "address": "123 Test Street"}
 
     response = client.post("/api/v1/warehouses", json=warehouse_data)
 
     assert response.status_code == 401
 
 
-def test_get_warehouse_success(client: TestClient, regular_user_headers: dict[str, str], test_warehouse_east: Warehouse):
+def test_get_warehouse_success(
+    client: TestClient, regular_user_headers: dict[str, str], test_warehouse_east: Warehouse
+):
     """Test getting a warehouse by ID with stock summary."""
     response = client.get(f"/api/v1/warehouses/{test_warehouse_east.id}", headers=regular_user_headers)
 
@@ -195,10 +176,7 @@ def test_get_warehouse_invalid_uuid(client: TestClient, regular_user_headers: di
 
 def test_update_warehouse_success(client: TestClient, admin_headers: dict[str, str], test_warehouse_east: Warehouse):
     """Test successful warehouse update."""
-    update_data = {
-        "name": "Updated Warehouse Name",
-        "address": "456 Updated Street, Updated City, UC 67890"
-    }
+    update_data = {"name": "Updated Warehouse Name", "address": "456 Updated Street, Updated City, UC 67890"}
 
     response = client.put(f"/api/v1/warehouses/{test_warehouse_east.id}", json=update_data, headers=admin_headers)
 
@@ -213,9 +191,7 @@ def test_update_warehouse_success(client: TestClient, admin_headers: dict[str, s
 
 def test_update_warehouse_partial(client: TestClient, admin_headers: dict[str, str], test_warehouse_east: Warehouse):
     """Test partial warehouse update."""
-    update_data = {
-        "is_active": False
-    }
+    update_data = {"is_active": False}
 
     response = client.put(f"/api/v1/warehouses/{test_warehouse_east.id}", json=update_data, headers=admin_headers)
 
@@ -227,7 +203,9 @@ def test_update_warehouse_partial(client: TestClient, admin_headers: dict[str, s
     assert data["code"] == test_warehouse_east.code  # Should remain unchanged
 
 
-def test_update_warehouse_duplicate_code(client: TestClient, admin_headers: dict[str, str], test_warehouse_east: Warehouse, test_warehouse_west: Warehouse):
+def test_update_warehouse_duplicate_code(
+    client: TestClient, admin_headers: dict[str, str], test_warehouse_east: Warehouse, test_warehouse_west: Warehouse
+):
     """Test updating warehouse to use existing code."""
     update_data = {
         "code": test_warehouse_west.code  # Use existing code from another warehouse
@@ -242,22 +220,22 @@ def test_update_warehouse_duplicate_code(client: TestClient, admin_headers: dict
 def test_update_warehouse_not_found(client: TestClient, admin_headers: dict[str, str]):
     """Test updating non-existent warehouse."""
     fake_id = str(uuid.uuid4())
-    update_data = {
-        "name": "Updated Name"
-    }
+    update_data = {"name": "Updated Name"}
 
     response = client.put(f"/api/v1/warehouses/{fake_id}", json=update_data, headers=admin_headers)
 
     assert response.status_code == 404
 
 
-def test_update_warehouse_non_admin(client: TestClient, regular_user_headers: dict[str, str], test_warehouse_east: Warehouse):
+def test_update_warehouse_non_admin(
+    client: TestClient, regular_user_headers: dict[str, str], test_warehouse_east: Warehouse
+):
     """Test updating warehouse fails for non-admin user."""
-    update_data = {
-        "name": "Updated Name"
-    }
+    update_data = {"name": "Updated Name"}
 
-    response = client.put(f"/api/v1/warehouses/{test_warehouse_east.id}", json=update_data, headers=regular_user_headers)
+    response = client.put(
+        f"/api/v1/warehouses/{test_warehouse_east.id}", json=update_data, headers=regular_user_headers
+    )
 
     assert response.status_code == 403
 
@@ -265,11 +243,7 @@ def test_update_warehouse_non_admin(client: TestClient, regular_user_headers: di
 def test_delete_warehouse_success(client: TestClient, admin_headers: dict[str, str], db):
     """Test successful warehouse deletion."""
     # Create a warehouse without stock levels
-    warehouse = Warehouse(
-        name="Warehouse to Delete",
-        code="DEL01",
-        address="123 Delete St"
-    )
+    warehouse = Warehouse(name="Warehouse to Delete", code="DEL01", address="123 Delete St")
     db.add(warehouse)
     db.commit()
     db.refresh(warehouse)
@@ -280,7 +254,9 @@ def test_delete_warehouse_success(client: TestClient, admin_headers: dict[str, s
     assert response.json()["detail"] == "Warehouse deleted successfully"
 
 
-def test_delete_warehouse_with_stock_levels(client: TestClient, admin_headers: dict[str, str], test_warehouse_east: Warehouse):
+def test_delete_warehouse_with_stock_levels(
+    client: TestClient, admin_headers: dict[str, str], test_warehouse_east: Warehouse
+):
     """Test deleting warehouse with stock levels fails."""
     # The test_warehouse_east should have stock levels from seeded data
     response = client.delete(f"/api/v1/warehouses/{test_warehouse_east.id}", headers=admin_headers)
@@ -297,14 +273,18 @@ def test_delete_warehouse_not_found(client: TestClient, admin_headers: dict[str,
     assert response.status_code == 404
 
 
-def test_delete_warehouse_non_admin(client: TestClient, regular_user_headers: dict[str, str], test_warehouse_east: Warehouse):
+def test_delete_warehouse_non_admin(
+    client: TestClient, regular_user_headers: dict[str, str], test_warehouse_east: Warehouse
+):
     """Test deleting warehouse fails for non-admin user."""
     response = client.delete(f"/api/v1/warehouses/{test_warehouse_east.id}", headers=regular_user_headers)
 
     assert response.status_code == 403
 
 
-def test_warehouse_stock_summary_calculation(client: TestClient, regular_user_headers: dict[str, str], test_warehouse_east: Warehouse):
+def test_warehouse_stock_summary_calculation(
+    client: TestClient, regular_user_headers: dict[str, str], test_warehouse_east: Warehouse
+):
     """Test that warehouse detail includes accurate stock summary."""
     response = client.get(f"/api/v1/warehouses/{test_warehouse_east.id}", headers=regular_user_headers)
 
@@ -333,11 +313,7 @@ def test_warehouse_stock_summary_calculation(client: TestClient, regular_user_he
 def test_warehouse_stock_summary_empty_warehouse(client: TestClient, admin_headers: dict[str, str]):
     """Test stock summary for warehouse with no stock levels."""
     # Create a new warehouse with no stock
-    warehouse_data = {
-        "name": "Empty Warehouse",
-        "code": "EMPTY01",
-        "address": "123 Empty St"
-    }
+    warehouse_data = {"name": "Empty Warehouse", "code": "EMPTY01", "address": "123 Empty St"}
 
     create_response = client.post("/api/v1/warehouses", json=warehouse_data, headers=admin_headers)
     assert create_response.status_code == 201

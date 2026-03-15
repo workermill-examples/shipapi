@@ -1,7 +1,7 @@
 """Tests for category endpoints."""
+
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 
 from src.models.category import Category
@@ -58,11 +58,7 @@ def test_list_categories_no_auth(client: TestClient):
 
 def test_create_category_success(client: TestClient, admin_headers: dict[str, str]):
     """Test successful category creation."""
-    category_data = {
-        "name": "Test Category",
-        "description": "A test category",
-        "parent_id": None
-    }
+    category_data = {"name": "Test Category", "description": "A test category", "parent_id": None}
 
     response = client.post("/api/v1/categories", json=category_data, headers=admin_headers)
 
@@ -83,7 +79,7 @@ def test_create_subcategory_success(client: TestClient, admin_headers: dict[str,
     category_data = {
         "name": "Test Subcategory",
         "description": "A test subcategory",
-        "parent_id": str(test_category.id)
+        "parent_id": str(test_category.id),
     }
 
     response = client.post("/api/v1/categories", json=category_data, headers=admin_headers)
@@ -101,7 +97,7 @@ def test_create_category_invalid_parent(client: TestClient, admin_headers: dict[
     category_data = {
         "name": "Test Category",
         "description": "A test category",
-        "parent_id": str(uuid.uuid4())  # Non-existent UUID
+        "parent_id": str(uuid.uuid4()),  # Non-existent UUID
     }
 
     response = client.post("/api/v1/categories", json=category_data, headers=admin_headers)
@@ -113,10 +109,7 @@ def test_create_category_invalid_parent(client: TestClient, admin_headers: dict[
 def test_create_category_duplicate_name(client: TestClient, admin_headers: dict[str, str]):
     """Test creating category with duplicate name (which creates duplicate slug)."""
     # First create a category
-    category_data = {
-        "name": "Unique Category Name",
-        "description": "First category"
-    }
+    category_data = {"name": "Unique Category Name", "description": "First category"}
     response = client.post("/api/v1/categories", json=category_data, headers=admin_headers)
     assert response.status_code == 201
 
@@ -129,10 +122,7 @@ def test_create_category_duplicate_name(client: TestClient, admin_headers: dict[
 
 def test_create_category_non_admin(client: TestClient, regular_user_headers: dict[str, str]):
     """Test creating category fails for non-admin user."""
-    category_data = {
-        "name": "Test Category",
-        "description": "A test category"
-    }
+    category_data = {"name": "Test Category", "description": "A test category"}
 
     response = client.post("/api/v1/categories", json=category_data, headers=regular_user_headers)
 
@@ -141,10 +131,7 @@ def test_create_category_non_admin(client: TestClient, regular_user_headers: dic
 
 def test_create_category_no_auth(client: TestClient):
     """Test creating category fails without authentication."""
-    category_data = {
-        "name": "Test Category",
-        "description": "A test category"
-    }
+    category_data = {"name": "Test Category", "description": "A test category"}
 
     response = client.post("/api/v1/categories", json=category_data)
 
@@ -182,10 +169,7 @@ def test_get_category_invalid_uuid(client: TestClient, regular_user_headers: dic
 
 def test_update_category_success(client: TestClient, admin_headers: dict[str, str], test_category: Category):
     """Test successful category update."""
-    update_data = {
-        "name": "Updated Category Name",
-        "description": "Updated description"
-    }
+    update_data = {"name": "Updated Category Name", "description": "Updated description"}
 
     response = client.put(f"/api/v1/categories/{test_category.id}", json=update_data, headers=admin_headers)
 
@@ -200,9 +184,7 @@ def test_update_category_success(client: TestClient, admin_headers: dict[str, st
 
 def test_update_category_partial(client: TestClient, admin_headers: dict[str, str], test_category: Category):
     """Test partial category update."""
-    update_data = {
-        "description": "Only updating description"
-    }
+    update_data = {"description": "Only updating description"}
 
     response = client.put(f"/api/v1/categories/{test_category.id}", json=update_data, headers=admin_headers)
 
@@ -216,9 +198,7 @@ def test_update_category_partial(client: TestClient, admin_headers: dict[str, st
 
 def test_update_category_self_parent(client: TestClient, admin_headers: dict[str, str], test_category: Category):
     """Test updating category to be its own parent (should fail)."""
-    update_data = {
-        "parent_id": str(test_category.id)
-    }
+    update_data = {"parent_id": str(test_category.id)}
 
     response = client.put(f"/api/v1/categories/{test_category.id}", json=update_data, headers=admin_headers)
 
@@ -229,9 +209,7 @@ def test_update_category_self_parent(client: TestClient, admin_headers: dict[str
 def test_update_category_not_found(client: TestClient, admin_headers: dict[str, str]):
     """Test updating non-existent category."""
     fake_id = str(uuid.uuid4())
-    update_data = {
-        "name": "Updated Name"
-    }
+    update_data = {"name": "Updated Name"}
 
     response = client.put(f"/api/v1/categories/{fake_id}", json=update_data, headers=admin_headers)
 
@@ -240,9 +218,7 @@ def test_update_category_not_found(client: TestClient, admin_headers: dict[str, 
 
 def test_update_category_non_admin(client: TestClient, regular_user_headers: dict[str, str], test_category: Category):
     """Test updating category fails for non-admin user."""
-    update_data = {
-        "name": "Updated Name"
-    }
+    update_data = {"name": "Updated Name"}
 
     response = client.put(f"/api/v1/categories/{test_category.id}", json=update_data, headers=regular_user_headers)
 
@@ -252,11 +228,7 @@ def test_update_category_non_admin(client: TestClient, regular_user_headers: dic
 def test_delete_category_success(client: TestClient, admin_headers: dict[str, str], db):
     """Test successful category deletion."""
     # Create a category without products
-    category = Category(
-        name="Category to Delete",
-        slug="category-to-delete",
-        description="Will be deleted"
-    )
+    category = Category(name="Category to Delete", slug="category-to-delete", description="Will be deleted")
     db.add(category)
     db.commit()
     db.refresh(category)
@@ -267,7 +239,9 @@ def test_delete_category_success(client: TestClient, admin_headers: dict[str, st
     assert response.json()["detail"] == "Category deleted successfully"
 
 
-def test_delete_category_with_products(client: TestClient, admin_headers: dict[str, str], test_category: Category, test_product: Product):
+def test_delete_category_with_products(
+    client: TestClient, admin_headers: dict[str, str], test_category: Category, test_product: Product
+):
     """Test deleting category with products fails."""
     # The test_category should have products from seeded data
     response = client.delete(f"/api/v1/categories/{test_category.id}", headers=admin_headers)
@@ -302,7 +276,9 @@ def test_slug_generation():
     assert generate_slug("Numbers123AndLetters") == "numbers123andletters"
 
 
-def test_category_response_includes_product_count(client: TestClient, regular_user_headers: dict[str, str], test_category: Category):
+def test_category_response_includes_product_count(
+    client: TestClient, regular_user_headers: dict[str, str], test_category: Category
+):
     """Test that category detail response includes product count."""
     response = client.get(f"/api/v1/categories/{test_category.id}", headers=regular_user_headers)
 

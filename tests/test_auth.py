@@ -1,22 +1,16 @@
 """Tests for authentication endpoints."""
-import uuid
+
 from datetime import datetime, timezone
 from unittest.mock import patch
 
-import pytest
 from fastapi.testclient import TestClient
 
-from src.auth import create_access_token, create_refresh_token, hash_password
-from src.models.user import User
+from src.auth import create_refresh_token
 
 
 def test_register_success(client: TestClient):
     """Test successful user registration."""
-    user_data = {
-        "email": "newuser@test.com",
-        "username": "newuser",
-        "password": "password123"
-    }
+    user_data = {"email": "newuser@test.com", "username": "newuser", "password": "password123"}
 
     response = client.post("/api/v1/auth/register", json=user_data)
 
@@ -38,7 +32,7 @@ def test_register_duplicate_email(client: TestClient):
     user_data = {
         "email": "admin@test.com",  # Exists in seeded data
         "username": "newuser",
-        "password": "password123"
+        "password": "password123",
     }
 
     response = client.post("/api/v1/auth/register", json=user_data)
@@ -52,7 +46,7 @@ def test_register_duplicate_username(client: TestClient):
     user_data = {
         "email": "newuser@test.com",
         "username": "admin_test",  # Exists in seeded data
-        "password": "password123"
+        "password": "password123",
     }
 
     response = client.post("/api/v1/auth/register", json=user_data)
@@ -63,11 +57,7 @@ def test_register_duplicate_username(client: TestClient):
 
 def test_register_invalid_email(client: TestClient):
     """Test registration fails with invalid email."""
-    user_data = {
-        "email": "invalid-email",
-        "username": "newuser",
-        "password": "password123"
-    }
+    user_data = {"email": "invalid-email", "username": "newuser", "password": "password123"}
 
     response = client.post("/api/v1/auth/register", json=user_data)
 
@@ -79,7 +69,7 @@ def test_register_short_password(client: TestClient):
     user_data = {
         "email": "newuser@test.com",
         "username": "newuser",
-        "password": "short"  # Less than 8 characters
+        "password": "short",  # Less than 8 characters
     }
 
     response = client.post("/api/v1/auth/register", json=user_data)
@@ -89,10 +79,7 @@ def test_register_short_password(client: TestClient):
 
 def test_login_success(client: TestClient):
     """Test successful login."""
-    login_data = {
-        "email": "admin@test.com",
-        "password": "admin123"
-    }
+    login_data = {"email": "admin@test.com", "password": "admin123"}
 
     response = client.post("/api/v1/auth/login", json=login_data)
 
@@ -108,10 +95,7 @@ def test_login_success(client: TestClient):
 
 def test_login_invalid_credentials(client: TestClient):
     """Test login fails with invalid credentials."""
-    login_data = {
-        "email": "admin@test.com",
-        "password": "wrongpassword"
-    }
+    login_data = {"email": "admin@test.com", "password": "wrongpassword"}
 
     response = client.post("/api/v1/auth/login", json=login_data)
 
@@ -121,10 +105,7 @@ def test_login_invalid_credentials(client: TestClient):
 
 def test_login_nonexistent_user(client: TestClient):
     """Test login fails with nonexistent user."""
-    login_data = {
-        "email": "nonexistent@test.com",
-        "password": "password123"
-    }
+    login_data = {"email": "nonexistent@test.com", "password": "password123"}
 
     response = client.post("/api/v1/auth/login", json=login_data)
 
@@ -134,18 +115,17 @@ def test_login_nonexistent_user(client: TestClient):
 
 def test_refresh_token_success(client: TestClient):
     """Test successful token refresh."""
+    import time
     # First login to get tokens
-    login_data = {
-        "email": "admin@test.com",
-        "password": "admin123"
-    }
+    login_data = {"email": "admin@test.com", "password": "admin123"}
     login_response = client.post("/api/v1/auth/login", json=login_data)
     tokens = login_response.json()
 
+    # Wait 1 second to ensure different timestamp for new token
+    time.sleep(1)
+
     # Use refresh token to get new access token
-    refresh_data = {
-        "refresh_token": tokens["refresh_token"]
-    }
+    refresh_data = {"refresh_token": tokens["refresh_token"]}
 
     response = client.post("/api/v1/auth/refresh", json=refresh_data)
 
@@ -164,9 +144,7 @@ def test_refresh_token_success(client: TestClient):
 
 def test_refresh_token_invalid(client: TestClient):
     """Test refresh fails with invalid token."""
-    refresh_data = {
-        "refresh_token": "invalid_token"
-    }
+    refresh_data = {"refresh_token": "invalid_token"}
 
     response = client.post("/api/v1/auth/refresh", json=refresh_data)
 
@@ -186,9 +164,7 @@ def test_refresh_token_expired(client: TestClient):
         mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
         expired_token = create_refresh_token(data={"sub": user_id})
 
-    refresh_data = {
-        "refresh_token": expired_token
-    }
+    refresh_data = {"refresh_token": expired_token}
 
     response = client.post("/api/v1/auth/refresh", json=refresh_data)
 
