@@ -16,7 +16,7 @@ router = APIRouter(prefix="/api/v1/audit", tags=["Audit Log"])
 
 
 @router.get("", response_model=PaginatedResponse[AuditLogResponse])
-def get_audit_log(
+def get_audit_log(  # noqa: PLR0913
     page: int = 1,
     per_page: int = 50,
     user_id: uuid.UUID | None = Query(None, description="Filter by user ID"),

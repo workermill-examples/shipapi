@@ -19,6 +19,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
+from psycopg2 import sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -63,7 +64,7 @@ def _get_postgres_connection_params():
         "port": port,
         "user": user,
         "password": password,
-        "database": "postgres"  # Connect to postgres for DB operations
+        "database": "postgres",  # Connect to postgres for DB operations
     }
 
 
@@ -84,11 +85,11 @@ def test_db_setup():
 
     with conn.cursor() as cursor:
         # Terminate existing connections to the test database
-        cursor.execute(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{DB_NAME}'")
+        cursor.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s", (DB_NAME,))
 
         # Drop database if it exists and recreate
-        cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")
-        cursor.execute(f"CREATE DATABASE {DB_NAME}")
+        cursor.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(DB_NAME)))
+        cursor.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(DB_NAME)))
 
     conn.close()
 
@@ -113,10 +114,10 @@ def test_db_setup():
 
     with conn.cursor() as cursor:
         # Terminate existing connections to the test database
-        cursor.execute(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{DB_NAME}'")
+        cursor.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s", (DB_NAME,))
 
         # Drop the test database
-        cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")
+        cursor.execute(sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(DB_NAME)))
 
     conn.close()
 

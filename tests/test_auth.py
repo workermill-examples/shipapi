@@ -1,5 +1,6 @@
 """Tests for authentication endpoints."""
 
+import time
 from datetime import datetime, timezone
 from unittest.mock import patch
 
@@ -88,7 +89,7 @@ def test_login_success(client: TestClient):
 
     assert "access_token" in data
     assert "refresh_token" in data
-    assert data["token_type"] == "bearer"
+    assert data["token_type"] == "bearer"  # noqa: S105
     assert data["expires_in"] == 30 * 60  # 30 minutes in seconds
     assert "X-Request-Id" in response.headers
 
@@ -115,7 +116,6 @@ def test_login_nonexistent_user(client: TestClient):
 
 def test_refresh_token_success(client: TestClient):
     """Test successful token refresh."""
-    import time
     # First login to get tokens
     login_data = {"email": "admin@test.com", "password": "admin123"}
     login_response = client.post("/api/v1/auth/login", json=login_data)
@@ -134,7 +134,7 @@ def test_refresh_token_success(client: TestClient):
 
     assert "access_token" in data
     assert "refresh_token" in data
-    assert data["token_type"] == "bearer"
+    assert data["token_type"] == "bearer"  # noqa: S105
     assert data["expires_in"] == 30 * 60
     # Should return the same refresh token
     assert data["refresh_token"] == tokens["refresh_token"]
@@ -161,7 +161,9 @@ def test_refresh_token_expired(client: TestClient):
     past_time = datetime(2020, 1, 1, tzinfo=timezone.utc)
     with patch("src.auth.datetime") as mock_datetime:
         mock_datetime.now.return_value = past_time
-        mock_datetime.side_effect = lambda *args, **kw: datetime(*args, **kw)
+        mock_datetime.side_effect = lambda *args, **kw: datetime(
+            *args, **kw, tzinfo=timezone.utc if not kw.get("tzinfo") else kw.get("tzinfo")
+        )
         expired_token = create_refresh_token(data={"sub": user_id})
 
     refresh_data = {"refresh_token": expired_token}

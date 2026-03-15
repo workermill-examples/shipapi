@@ -93,12 +93,10 @@ def test_get_audit_log_filter_by_date_range(client: TestClient, admin_headers: d
     start_date = datetime(2020, 1, 1, tzinfo=timezone.utc)
 
     # Format dates properly for URL encoding
-    start_date_str = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
-    end_date_str = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+    start_date_str = start_date.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
+    end_date_str = end_date.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
 
-    response = client.get(
-        f"/api/v1/audit?start_date={start_date_str}&end_date={end_date_str}", headers=admin_headers
-    )
+    response = client.get(f"/api/v1/audit?start_date={start_date_str}&end_date={end_date_str}", headers=admin_headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -135,12 +133,10 @@ def test_get_audit_log_empty_results(client: TestClient, admin_headers: dict[str
     end_date = datetime(2000, 12, 31, tzinfo=timezone.utc)
 
     # Format dates properly for URL encoding
-    start_date_str = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
-    end_date_str = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+    start_date_str = start_date.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
+    end_date_str = end_date.strftime("%Y-%m-%dT%H:%M:%S") + "Z"
 
-    response = client.get(
-        f"/api/v1/audit?start_date={start_date_str}&end_date={end_date_str}", headers=admin_headers
-    )
+    response = client.get(f"/api/v1/audit?start_date={start_date_str}&end_date={end_date_str}", headers=admin_headers)
 
     assert response.status_code == 200
     data = response.json()

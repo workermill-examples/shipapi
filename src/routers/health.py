@@ -10,7 +10,7 @@ router = APIRouter(prefix="/api/v1", tags=["Health"])
 
 
 @router.get("/health")
-def health_check(db: Session = Depends(get_db)):
+def health_check(db: Session = Depends(get_db)) -> dict[str, str]:
     """
     Health check endpoint with database connectivity verification.
 

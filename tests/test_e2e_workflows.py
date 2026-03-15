@@ -4,6 +4,7 @@ These tests validate complete workflows as multi-step sequences where each step
 depends on the previous. They catch integration bugs that unit tests miss.
 """
 
+import time
 import uuid
 
 import pytest
@@ -74,7 +75,7 @@ class TestAuthWorkflow:
         tokens = login_response.json()
         assert "access_token" in tokens
         assert "refresh_token" in tokens
-        assert tokens["token_type"] == "bearer"
+        assert tokens["token_type"] == "bearer"  # noqa: S105
 
         # Step 3: Access protected route with JWT
         headers = {"Authorization": f"Bearer {tokens['access_token']}"}
@@ -83,7 +84,6 @@ class TestAuthWorkflow:
         assert me_response.json()["id"] == user_id
 
         # Step 4: Refresh token
-        import time
         time.sleep(1)  # Wait to ensure different timestamp
         refresh_data = {"refresh_token": tokens["refresh_token"]}
         refresh_response = client.post("/api/v1/auth/refresh", json=refresh_data)
@@ -205,17 +205,17 @@ class TestProductLifecycleWorkflow:
 
         # Should have audit entries for our operations
         audit_entries = audit_response.json()["items"]
-        product_audits = [entry for entry in audit_entries if entry.get("resource_id") == product_id]
         # Note: Audit logging might not be fully implemented yet, so we just verify access works
+        _ = [entry for entry in audit_entries if entry.get("resource_id") == product_id]
 
 
 class TestStockTransferWorkflow:
     """Test complete stock management workflow."""
 
-    def test_stock_transfer_workflow(
+    def test_stock_transfer_workflow(  # noqa: PLR0915
         self, client: TestClient, admin_headers: dict[str, str], regular_user_headers: dict[str, str]
     ):
-        """Test: create warehouses -> create product -> adjust stock -> transfer -> verify balances -> check history -> check alerts."""
+        """Test complete stock workflow: warehouses -> product -> stock -> transfer -> verify."""
 
         unique_id = uuid.uuid4().hex[:8]
 
@@ -388,7 +388,7 @@ class TestRateLimitWorkflow:
 
         # Should either hit rate limit OR have successfully registered several users
         assert rate_limited or successful_registrations >= 3, (
-            f"Expected rate limiting or multiple successful registrations, got {successful_registrations} successful, rate_limited: {rate_limited}"
+            f"Expected rate limiting or registrations, got {successful_registrations} successful"
         )
 
         if rate_limited:

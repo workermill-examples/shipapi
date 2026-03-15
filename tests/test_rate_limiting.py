@@ -40,7 +40,7 @@ def test_rate_limit_login_endpoint(client: TestClient):
 
     rate_limited_responses = 0
 
-    for i in range(12):  # Try 12 requests, should be rate limited after 10
+    for _ in range(12):  # Try 12 requests, should be rate limited after 10
         login_data = {"email": "nonexistent@test.com", "password": "wrongpassword"}
 
         response = client.post("/api/v1/auth/login", json=login_data)
@@ -73,7 +73,7 @@ def test_rate_limit_refresh_endpoint(client: TestClient, admin_headers: dict[str
     # Try many refresh attempts
     rate_limited_responses = 0
 
-    for i in range(35):  # Try 35 requests, should be rate limited after 30
+    for _ in range(35):  # Try 35 requests, should be rate limited after 30
         refresh_data = {"refresh_token": tokens["refresh_token"]}
 
         response = client.post("/api/v1/auth/refresh", json=refresh_data)
@@ -96,7 +96,6 @@ def test_rate_limit_authenticated_routes(client: TestClient, regular_user_header
     # This test checks that the limit exists but may not hit it due to test time constraints
 
     successful_requests = 0
-    rate_limited = False
 
     # Try many requests to a simple authenticated endpoint
     for _i in range(20):  # Just try 20 to avoid test timeout

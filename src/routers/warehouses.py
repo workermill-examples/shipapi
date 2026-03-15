@@ -158,7 +158,7 @@ def delete_warehouse(
 
     # Check if warehouse has stock levels
     stock_count_result = db.execute(select(func.count(StockLevel.id)).where(StockLevel.warehouse_id == warehouse.id))
-    stock_count = stock_count_result.scalar()
+    stock_count = stock_count_result.scalar() or 0
 
     if stock_count > 0:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete warehouse with stock levels")

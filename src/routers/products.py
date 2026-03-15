@@ -17,7 +17,7 @@ router = APIRouter(prefix="/api/v1/products", tags=["Products"])
 
 
 @router.get("", response_model=PaginatedResponse[ProductResponse])
-def list_products(
+def list_products(  # noqa: PLR0913, PLR0912
     search: str | None = Query(None, description="Full-text search query"),
     category_id: uuid.UUID | None = Query(None, description="Filter by category"),
     min_price: float | None = Query(None, ge=0, description="Minimum price filter"),

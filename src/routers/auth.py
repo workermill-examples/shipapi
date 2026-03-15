@@ -31,7 +31,7 @@ router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 @router.post("/register", response_model=UserResponse)
 @limiter.limit("5/minute")
-def register(request: Request, user_data: UserCreate, db: Session = Depends(get_db)):
+def register(request: Request, user_data: UserCreate, db: Session = Depends(get_db)) -> UserResponse:
     """
     Register a new user account.
 
@@ -64,12 +64,12 @@ def register(request: Request, user_data: UserCreate, db: Session = Depends(get_
     db.commit()
     db.refresh(new_user)
 
-    return new_user
+    return UserResponse.model_validate(new_user)
 
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("10/minute")
-def login(request: Request, login_data: LoginRequest, db: Session = Depends(get_db)):
+def login(request: Request, login_data: LoginRequest, db: Session = Depends(get_db)) -> TokenResponse:
     """
     Authenticate user and return JWT tokens.
 
@@ -94,14 +94,14 @@ def login(request: Request, login_data: LoginRequest, db: Session = Depends(get_
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_token,
-        token_type="bearer",
+        token_type="bearer",  # noqa: S106
         expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert to seconds
     )
 
 
 @router.post("/refresh", response_model=TokenResponse)
 @limiter.limit("30/minute")
-def refresh_token(request: Request, refresh_data: RefreshRequest, db: Session = Depends(get_db)):
+def refresh_token(request: Request, refresh_data: RefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
     """
     Refresh access token using refresh token.
 
@@ -134,24 +134,26 @@ def refresh_token(request: Request, refresh_data: RefreshRequest, db: Session = 
     return TokenResponse(
         access_token=access_token,
         refresh_token=refresh_data.refresh_token,  # Return the same refresh token
-        token_type="bearer",
+        token_type="bearer",  # noqa: S106
         expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,  # Convert to seconds
     )
 
 
 @router.get("/me", response_model=UserResponse)
-def get_current_user_profile(current_user: User = Depends(get_current_user)):
+def get_current_user_profile(current_user: User = Depends(get_current_user)) -> UserResponse:
     """
     Get current user profile.
 
     Returns the authenticated user's profile information.
     Requires valid JWT token or API key authentication.
     """
-    return current_user
+    return UserResponse.model_validate(current_user)
 
 
 @router.post("/api-key", response_model=ApiKeyResponse)
-def generate_user_api_key(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def generate_user_api_key(
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+) -> ApiKeyResponse:
     """
     Generate a new API key for the current user.
 
@@ -173,7 +175,7 @@ def generate_user_api_key(current_user: User = Depends(get_current_user), db: Se
 
 
 @router.delete("/api-key")
-def revoke_api_key(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def revoke_api_key(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> dict[str, str]:
     """
     Revoke the current user's API key.
 

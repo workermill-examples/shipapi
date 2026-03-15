@@ -4,6 +4,7 @@ import uuid
 
 from fastapi.testclient import TestClient
 
+from src.auth import create_access_token
 from src.models.product import Product
 from src.models.warehouse import Warehouse
 
@@ -96,8 +97,6 @@ def test_adjust_stock_create_new(
     """Test stock adjustment creates new stock level."""
     # Use a different product/warehouse combination that doesn't exist
     # First, create a new product for this test
-    from src.models.product import Product
-
     new_product = Product(
         name="New Test Product",
         sku="NEW-TEST-001",
@@ -291,8 +290,6 @@ def test_create_stock_transfer_insufficient_stock(
     admin_token = regular_user_headers["Authorization"].replace("Bearer ", "")
 
     # Get admin headers for stock adjustment
-    from src.auth import create_access_token
-
     admin_token = create_access_token(data={"sub": "11111111-1111-1111-1111-111111111111"})
     admin_headers = {"Authorization": f"Bearer {admin_token}"}
 
@@ -322,8 +319,6 @@ def test_create_stock_transfer_no_source_stock(
 ):
     """Test stock transfer fails when no stock exists at source."""
     # Create a new product with no stock levels
-    from src.models.product import Product
-
     new_product = Product(
         name="No Stock Product",
         sku="NO-STOCK-001",
@@ -444,7 +439,7 @@ def test_get_transfer_history_filter_by_warehouse(
         )
 
 
-def test_stock_transfer_atomicity(
+def test_stock_transfer_atomicity(  # noqa: PLR0913
     client: TestClient,
     regular_user_headers: dict[str, str],
     test_product: Product,
@@ -524,16 +519,12 @@ def test_stock_transfer_creates_destination_if_missing(
 ):
     """Test that stock transfer creates destination stock level if it doesn't exist."""
     # Create a new warehouse with no stock levels
-    from src.models.warehouse import Warehouse
-
     new_warehouse = Warehouse(name="New Test Warehouse", code="NEW01", address="123 New St")
     db.add(new_warehouse)
     db.commit()
     db.refresh(new_warehouse)
 
     # Create a new product
-    from src.models.product import Product
-
     new_product = Product(
         name="Transfer Test Product",
         sku="TRANSFER-001",

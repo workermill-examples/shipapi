@@ -84,7 +84,7 @@ def create_app() -> FastAPI:
 
     # Add rate limiting middleware
     app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
     app.add_middleware(SlowAPIMiddleware)
 
     # Add custom middleware using FastAPI's middleware system
@@ -105,7 +105,7 @@ def create_app() -> FastAPI:
 
     # Root endpoint for basic service info
     @app.get("/", include_in_schema=False)
-    def root():
+    def root() -> dict[str, str]:
         """Root endpoint returning basic service information."""
         return {
             "service": "ShipAPI",
@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     uvicorn.run(
         "src.main:app",
-        host="0.0.0.0",
+        host="0.0.0.0",  # noqa: S104
         port=settings.PORT,
         reload=True,
         log_level="info",

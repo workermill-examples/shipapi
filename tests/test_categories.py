@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from src.models.category import Category
 from src.models.product import Product
+from src.routers.categories import generate_slug
 
 
 def test_list_categories_success(client: TestClient, regular_user_headers: dict[str, str]):
@@ -267,7 +268,6 @@ def test_delete_category_non_admin(client: TestClient, regular_user_headers: dic
 
 def test_slug_generation():
     """Test slug generation function."""
-    from src.routers.categories import generate_slug
 
     assert generate_slug("Simple Name") == "simple-name"
     assert generate_slug("Complex-Name_With@Special!Chars") == "complex-name-with-special-chars"
