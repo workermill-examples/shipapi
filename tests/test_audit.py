@@ -106,7 +106,14 @@ def test_get_audit_log_filter_by_date_range(client: TestClient, admin_headers: d
 
     # All returned entries should be within the date range
     for entry in data["items"]:
-        entry_date = datetime.fromisoformat(entry["created_at"].replace("Z", "+00:00"))
+        # Parse the ISO format date with timezone info
+        created_at_str = entry["created_at"]
+        if created_at_str.endswith("Z"):
+            created_at_str = created_at_str[:-1] + "+00:00"
+        entry_date = datetime.fromisoformat(created_at_str)
+        # If entry_date is naive, make it timezone-aware
+        if entry_date.tzinfo is None:
+            entry_date = entry_date.replace(tzinfo=timezone.utc)
         assert start_date <= entry_date <= end_date
 
 

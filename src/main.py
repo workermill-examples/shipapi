@@ -118,6 +118,45 @@ def create_app() -> FastAPI:
         """Return 404 for auth routes without proper API prefix."""
         raise HTTPException(status_code=404, detail="Not found")
 
+    # Handle invalid categories routes that are missing the /api/v1 prefix
+    @app.api_route("/categories", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    @app.api_route(
+        "/categories/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False
+    )
+    async def invalid_categories_routes(path: str = "") -> None:
+        """Return 404 for categories routes without proper API prefix."""
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # Handle invalid products routes that are missing the /api/v1 prefix
+    @app.api_route("/products", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    @app.api_route("/products/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    async def invalid_products_routes(path: str = "") -> None:
+        """Return 404 for products routes without proper API prefix."""
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # Handle invalid warehouses routes that are missing the /api/v1 prefix
+    @app.api_route("/warehouses", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    @app.api_route(
+        "/warehouses/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False
+    )
+    async def invalid_warehouses_routes(path: str = "") -> None:
+        """Return 404 for warehouses routes without proper API prefix."""
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # Handle invalid stock routes that are missing the /api/v1 prefix
+    @app.api_route("/stock", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    @app.api_route("/stock/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    async def invalid_stock_routes(path: str = "") -> None:
+        """Return 404 for stock routes without proper API prefix."""
+        raise HTTPException(status_code=404, detail="Not found")
+
+    # Handle invalid audit routes that are missing the /api/v1 prefix
+    @app.api_route("/audit", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    @app.api_route("/audit/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    async def invalid_audit_routes(path: str = "") -> None:
+        """Return 404 for audit routes without proper API prefix."""
+        raise HTTPException(status_code=404, detail="Not found")
+
     # SPA catch-all route for frontend routing
     @app.get("/{path:path}", include_in_schema=False)
     async def spa_fallback(request: Request, path: str) -> FileResponse:
