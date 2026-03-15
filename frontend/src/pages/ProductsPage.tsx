@@ -331,14 +331,14 @@ export default function ProductsPage() {
                   <div className="grid gap-2">
                     <Label htmlFor="category">Category</Label>
                     <Select
-                      value={formData.category_id}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value }))}
+                      value={formData.category_id || "__none__"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value === '__none__' ? '' : value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select a category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No category</SelectItem>
+                        <SelectItem value="__none__">No category</SelectItem>
                         {categories?.map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
@@ -385,12 +385,12 @@ export default function ProductsPage() {
                 className="pl-9"
               />
             </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select value={selectedCategory || "__all__"} onValueChange={(val) => setSelectedCategory(val === '__all__' ? '' : val)}>
               <SelectTrigger>
                 <SelectValue placeholder="All categories" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All categories</SelectItem>
+                <SelectItem value="__all__">All categories</SelectItem>
                 {categories?.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -398,12 +398,12 @@ export default function ProductsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select value={statusFilter || "__all__"} onValueChange={(val) => setStatusFilter(val === '__all__' ? '' : val)}>
               <SelectTrigger>
                 <SelectValue placeholder="All statuses" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All statuses</SelectItem>
+                <SelectItem value="__all__">All statuses</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
                 <SelectItem value="inactive">Discontinued</SelectItem>
               </SelectContent>
@@ -609,14 +609,14 @@ export default function ProductsPage() {
             <div className="grid gap-2">
               <Label htmlFor="edit-category">Category</Label>
               <Select
-                value={formData.category_id}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value }))}
+                value={formData.category_id || "__none__"}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, category_id: value === '__none__' ? '' : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select a category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No category</SelectItem>
+                  <SelectItem value="__none__">No category</SelectItem>
                   {categories?.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
