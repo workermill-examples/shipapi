@@ -21,7 +21,9 @@ class Category(Base):
     )
 
     # Self-referential relationship
-    parent: Mapped[Optional["Category"]] = relationship("Category", remote_side=[id], back_populates="children")
+    parent: Mapped[Optional["Category"]] = relationship(
+        "Category", remote_side="Category.id", back_populates="children"
+    )
     children: Mapped[list["Category"]] = relationship("Category", back_populates="parent")
 
     # Products relationship (will be loaded by Product model)
