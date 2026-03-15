@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Filter, Calendar, Search, ChevronDown, ChevronRight } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   Card,
   CardContent,
