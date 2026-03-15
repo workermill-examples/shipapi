@@ -9,7 +9,7 @@ from slowapi.util import get_remote_address
 
 from src.config import settings
 from src.middleware import AccessLogMiddleware, RequestIdMiddleware
-from src.routers import auth, health
+from src.routers import audit, auth, categories, health, products, showcase, stock, warehouses
 
 # Rate limiter for global middleware
 limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
@@ -61,6 +61,10 @@ def create_app() -> FastAPI:
                 "name": "Audit",
                 "description": "Audit logging and activity tracking",
             },
+            {
+                "name": "Showcase",
+                "description": "Public showcase statistics and metrics",
+            },
         ],
     )
 
@@ -88,8 +92,16 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestIdMiddleware)
 
     # Include routers with API v1 prefix
-    app.include_router(health.router, prefix="/api/v1")
-    app.include_router(auth.router, prefix="/api/v1")
+    app.include_router(health.router)  # health router already has /api/v1 prefix
+    app.include_router(auth.router)    # auth router already has /api/v1 prefix
+    app.include_router(categories.router)  # categories router already has /api/v1 prefix
+    app.include_router(products.router)    # products router already has /api/v1 prefix
+    app.include_router(warehouses.router)  # warehouses router already has /api/v1 prefix
+    app.include_router(stock.router)       # stock router already has /api/v1 prefix
+    app.include_router(audit.router)       # audit router already has /api/v1 prefix
+
+    # Showcase router (outside /api/v1 prefix)
+    app.include_router(showcase.router)
 
     # Root endpoint for basic service info
     @app.get("/", include_in_schema=False)
