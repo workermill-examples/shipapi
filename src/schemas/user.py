@@ -44,6 +44,12 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class RefreshRequest(BaseModel):
+    """Request schema for token refresh."""
+
+    refresh_token: str
+
+
 class ApiKeyResponse(BaseModel):
     """Response schema for API key generation."""
 
