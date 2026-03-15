@@ -36,8 +36,31 @@ def list_warehouses(
     warehouses_result = db.execute(select(Warehouse).order_by(Warehouse.name).offset(offset).limit(per_page))
     warehouses = warehouses_result.scalars().all()
 
+    # Compute stock summaries for each warehouse
+    warehouse_responses = []
+    for warehouse in warehouses:
+        # Calculate stock summary using func.count and func.sum
+        result = db.execute(
+            select(
+                func.count(StockLevel.id).label("total_items"),
+                func.coalesce(func.sum(StockLevel.quantity), 0).label("total_quantity"),
+            ).where(StockLevel.warehouse_id == warehouse.id)
+        )
+        summary = result.one()
+
+        # Create stock summary
+        stock_summary = StockSummary(
+            total_items=summary.total_items,
+            total_quantity=summary.total_quantity,
+        )
+
+        # Convert to response model and add stock summary
+        response_data = WarehouseResponse.model_validate(warehouse)
+        response_data.stock_summary = stock_summary
+        warehouse_responses.append(response_data)
+
     return {
-        "items": warehouses,
+        "items": warehouse_responses,
         "total": total,
         "page": page,
         "per_page": per_page,
