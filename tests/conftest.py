@@ -8,33 +8,63 @@ Provides fixtures for:
 - TestClient with FastAPI app
 - Auth headers for admin and regular users
 """
+
 import os
 import uuid
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
+import psycopg2
 import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from src.auth import create_access_token, hash_password
 from src.database import get_db
 from src.main import create_app
-from src.models import AuditLog, Base, Category, Product, StockLevel, StockTransfer, User, Warehouse
-
+from src.models import AuditLog, Category, Product, StockLevel, StockTransfer, User, Warehouse
 
 # Test database configuration
-TEST_DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql://shipapi:shipapi@localhost:5432/shipapi_test"
-).replace("shipapi_test", "shipapi_test")
+TEST_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://shipapi:shipapi@localhost:5432/shipapi_test").replace(
+    "shipapi_test", "shipapi_test"
+)
 
 # Extract connection details for database creation
 DB_URL_PARTS = TEST_DATABASE_URL.split("/")
 DB_NAME = DB_URL_PARTS[-1]  # shipapi_test
 DB_URL_WITHOUT_NAME = "/".join(DB_URL_PARTS[:-1])  # postgresql://user:pass@host:port
+
+
+def _get_postgres_connection_params():
+    """Parse TEST_DATABASE_URL to get connection parameters."""
+    # Example: postgresql://shipapi:shipapi@localhost:5432/shipapi_test
+    url_parts = TEST_DATABASE_URL.replace("postgresql://", "").split("/")
+
+    auth_host = url_parts[0]  # shipapi:shipapi@localhost:5432
+    if "@" in auth_host:
+        auth, host_port = auth_host.split("@")
+        user, password = auth.split(":")
+    else:
+        user, password = "shipapi", "shipapi"
+        host_port = auth_host
+
+    if ":" in host_port:
+        host, port = host_port.split(":")
+        port = int(port)
+    else:
+        host, port = host_port, 5432
+
+    return {
+        "host": host,
+        "port": port,
+        "user": user,
+        "password": password,
+        "database": "postgres"  # Connect to postgres for DB operations
+    }
 
 
 @pytest.fixture(scope="session")
@@ -45,23 +75,22 @@ def test_db_setup():
     Creates the test database, runs Alembic migrations, and drops
     the database after all tests complete.
     """
-    # Create engine for database creation (connect to 'postgres' database)
-    admin_engine = create_engine(f"{DB_URL_WITHOUT_NAME}/postgres")
+    # Get connection parameters
+    conn_params = _get_postgres_connection_params()
 
-    # Create the test database
-    with admin_engine.connect() as conn:
+    # Create the test database using psycopg2
+    conn = psycopg2.connect(**conn_params)
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+
+    with conn.cursor() as cursor:
         # Terminate existing connections to the test database
-        conn.execute(
-            text(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{DB_NAME}'")
-        )
-        conn.commit()
+        cursor.execute(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{DB_NAME}'")
 
         # Drop database if it exists and recreate
-        conn.execute(text(f"DROP DATABASE IF EXISTS {DB_NAME}"))
-        conn.execute(text(f"CREATE DATABASE {DB_NAME}"))
-        conn.commit()
+        cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")
+        cursor.execute(f"CREATE DATABASE {DB_NAME}")
 
-    admin_engine.dispose()
+    conn.close()
 
     # Run Alembic migrations on the test database
     test_engine = create_engine(TEST_DATABASE_URL)
@@ -78,16 +107,18 @@ def test_db_setup():
     # Cleanup
     test_engine.dispose()
 
-    # Drop the test database
-    with admin_engine.connect() as conn:
-        conn.execute(
-            text(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{DB_NAME}'")
-        )
-        conn.commit()
-        conn.execute(text(f"DROP DATABASE IF EXISTS {DB_NAME}"))
-        conn.commit()
+    # Drop the test database using psycopg2
+    conn = psycopg2.connect(**conn_params)
+    conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
 
-    admin_engine.dispose()
+    with conn.cursor() as cursor:
+        # Terminate existing connections to the test database
+        cursor.execute(f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{DB_NAME}'")
+
+        # Drop the test database
+        cursor.execute(f"DROP DATABASE IF EXISTS {DB_NAME}")
+
+    conn.close()
 
 
 @pytest.fixture
@@ -98,16 +129,23 @@ def db(test_db_setup) -> Generator[Session]:
     Each test gets a clean database session with seeded data.
     Changes are rolled back after each test.
     """
-    TestSessionLocal = sessionmaker(bind=test_db_setup)
-    db_session = TestSessionLocal()
+    test_session_local = sessionmaker(bind=test_db_setup)
+
+    # Start a transaction that we can rollback
+    connection = test_db_setup.connect()
+    transaction = connection.begin()
+
+    # Create session bound to this connection
+    db_session = test_session_local(bind=connection)
 
     try:
         # Seed test data
         _seed_test_data(db_session)
         yield db_session
     finally:
-        db_session.rollback()
         db_session.close()
+        transaction.rollback()
+        connection.close()
 
 
 def _seed_test_data(db: Session) -> None:

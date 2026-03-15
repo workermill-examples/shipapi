@@ -1,7 +1,7 @@
 """Tests for product endpoints."""
+
 import uuid
 
-import pytest
 from fastapi.testclient import TestClient
 
 from src.models.category import Category
@@ -51,7 +51,9 @@ def test_list_products_pagination(client: TestClient, regular_user_headers: dict
     assert len(data["items"]) <= 1
 
 
-def test_list_products_filter_by_category(client: TestClient, regular_user_headers: dict[str, str], test_category: Category):
+def test_list_products_filter_by_category(
+    client: TestClient, regular_user_headers: dict[str, str], test_category: Category
+):
     """Test filtering products by category."""
     response = client.get(f"/api/v1/products?category_id={test_category.id}", headers=regular_user_headers)
 
@@ -147,7 +149,7 @@ def test_create_product_success(client: TestClient, admin_headers: dict[str, str
         "sku": "TEST-001",
         "description": "A test product for unit testing",
         "price": 29.99,
-        "category_id": str(test_category.id)
+        "category_id": str(test_category.id),
     }
 
     response = client.post("/api/v1/products", json=product_data, headers=admin_headers)
@@ -173,7 +175,7 @@ def test_create_product_invalid_category(client: TestClient, admin_headers: dict
         "sku": "TEST-002",
         "description": "A test product",
         "price": 29.99,
-        "category_id": str(uuid.uuid4())  # Non-existent UUID
+        "category_id": str(uuid.uuid4()),  # Non-existent UUID
     }
 
     response = client.post("/api/v1/products", json=product_data, headers=admin_headers)
@@ -190,7 +192,7 @@ def test_create_product_duplicate_sku(client: TestClient, admin_headers: dict[st
         "sku": "DUPLICATE-SKU",
         "description": "First product",
         "price": 29.99,
-        "category_id": str(test_category.id)
+        "category_id": str(test_category.id),
     }
     response = client.post("/api/v1/products", json=product_data, headers=admin_headers)
     assert response.status_code == 201
@@ -201,7 +203,7 @@ def test_create_product_duplicate_sku(client: TestClient, admin_headers: dict[st
         "sku": "DUPLICATE-SKU",
         "description": "Duplicate SKU product",
         "price": 39.99,
-        "category_id": str(test_category.id)
+        "category_id": str(test_category.id),
     }
 
     response = client.post("/api/v1/products", json=duplicate_data, headers=admin_headers)
@@ -217,7 +219,7 @@ def test_create_product_invalid_price(client: TestClient, admin_headers: dict[st
         "sku": "TEST-003",
         "description": "A test product",
         "price": -10.0,  # Negative price should fail
-        "category_id": str(test_category.id)
+        "category_id": str(test_category.id),
     }
 
     response = client.post("/api/v1/products", json=product_data, headers=admin_headers)
@@ -232,7 +234,7 @@ def test_create_product_non_admin(client: TestClient, regular_user_headers: dict
         "sku": "TEST-004",
         "description": "A test product",
         "price": 29.99,
-        "category_id": str(test_category.id)
+        "category_id": str(test_category.id),
     }
 
     response = client.post("/api/v1/products", json=product_data, headers=regular_user_headers)
@@ -274,11 +276,7 @@ def test_get_product_invalid_uuid(client: TestClient, regular_user_headers: dict
 
 def test_update_product_success(client: TestClient, admin_headers: dict[str, str], test_product: Product):
     """Test successful product update."""
-    update_data = {
-        "name": "Updated Product Name",
-        "description": "Updated description",
-        "price": 39.99
-    }
+    update_data = {"name": "Updated Product Name", "description": "Updated description", "price": 39.99}
 
     response = client.put(f"/api/v1/products/{test_product.id}", json=update_data, headers=admin_headers)
 
@@ -294,9 +292,7 @@ def test_update_product_success(client: TestClient, admin_headers: dict[str, str
 
 def test_update_product_partial(client: TestClient, admin_headers: dict[str, str], test_product: Product):
     """Test partial product update."""
-    update_data = {
-        "price": 49.99
-    }
+    update_data = {"price": 49.99}
 
     response = client.put(f"/api/v1/products/{test_product.id}", json=update_data, headers=admin_headers)
 
@@ -310,9 +306,7 @@ def test_update_product_partial(client: TestClient, admin_headers: dict[str, str
 
 def test_update_product_invalid_category(client: TestClient, admin_headers: dict[str, str], test_product: Product):
     """Test updating product with invalid category ID."""
-    update_data = {
-        "category_id": str(uuid.uuid4())
-    }
+    update_data = {"category_id": str(uuid.uuid4())}
 
     response = client.put(f"/api/v1/products/{test_product.id}", json=update_data, headers=admin_headers)
 
@@ -323,9 +317,7 @@ def test_update_product_invalid_category(client: TestClient, admin_headers: dict
 def test_update_product_not_found(client: TestClient, admin_headers: dict[str, str]):
     """Test updating non-existent product."""
     fake_id = str(uuid.uuid4())
-    update_data = {
-        "name": "Updated Name"
-    }
+    update_data = {"name": "Updated Name"}
 
     response = client.put(f"/api/v1/products/{fake_id}", json=update_data, headers=admin_headers)
 
@@ -334,9 +326,7 @@ def test_update_product_not_found(client: TestClient, admin_headers: dict[str, s
 
 def test_update_product_non_admin(client: TestClient, regular_user_headers: dict[str, str], test_product: Product):
     """Test updating product fails for non-admin user."""
-    update_data = {
-        "name": "Updated Name"
-    }
+    update_data = {"name": "Updated Name"}
 
     response = client.put(f"/api/v1/products/{test_product.id}", json=update_data, headers=regular_user_headers)
 
@@ -375,7 +365,9 @@ def test_delete_product_non_admin(client: TestClient, regular_user_headers: dict
     assert response.status_code == 403
 
 
-def test_product_search_functionality(client: TestClient, regular_user_headers: dict[str, str], admin_headers: dict[str, str], test_category: Category):
+def test_product_search_functionality(
+    client: TestClient, regular_user_headers: dict[str, str], admin_headers: dict[str, str], test_category: Category
+):
     """Test full-text search functionality in detail."""
     # Create a product with specific searchable content
     product_data = {
@@ -383,7 +375,7 @@ def test_product_search_functionality(client: TestClient, regular_user_headers: 
         "sku": "SEARCH-TEST-001",
         "description": "High accuracy digital temperature measurement device for industrial applications",
         "price": 35.99,
-        "category_id": str(test_category.id)
+        "category_id": str(test_category.id),
     }
 
     create_response = client.post("/api/v1/products", json=product_data, headers=admin_headers)
@@ -415,8 +407,7 @@ def test_product_search_functionality(client: TestClient, regular_user_headers: 
 def test_product_combined_filters(client: TestClient, regular_user_headers: dict[str, str]):
     """Test combining multiple filters."""
     response = client.get(
-        f"/api/v1/products?is_active=true&min_price=20&max_price=50&sort_by=price",
-        headers=regular_user_headers
+        "/api/v1/products?is_active=true&min_price=20&max_price=50&sort_by=price", headers=regular_user_headers
     )
 
     assert response.status_code == 200

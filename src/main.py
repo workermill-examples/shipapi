@@ -93,12 +93,12 @@ def create_app() -> FastAPI:
 
     # Include routers with API v1 prefix
     app.include_router(health.router)  # health router already has /api/v1 prefix
-    app.include_router(auth.router)    # auth router already has /api/v1 prefix
+    app.include_router(auth.router)  # auth router already has /api/v1 prefix
     app.include_router(categories.router)  # categories router already has /api/v1 prefix
-    app.include_router(products.router)    # products router already has /api/v1 prefix
+    app.include_router(products.router)  # products router already has /api/v1 prefix
     app.include_router(warehouses.router)  # warehouses router already has /api/v1 prefix
-    app.include_router(stock.router)       # stock router already has /api/v1 prefix
-    app.include_router(audit.router)       # audit router already has /api/v1 prefix
+    app.include_router(stock.router)  # stock router already has /api/v1 prefix
+    app.include_router(audit.router)  # audit router already has /api/v1 prefix
 
     # Showcase router (outside /api/v1 prefix)
     app.include_router(showcase.router)

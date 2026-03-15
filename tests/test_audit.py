@@ -1,8 +1,8 @@
 """Tests for audit log endpoints."""
+
 import uuid
 from datetime import datetime, timezone
 
-import pytest
 from fastapi.testclient import TestClient
 
 from src.models.user import User
@@ -92,9 +92,12 @@ def test_get_audit_log_filter_by_date_range(client: TestClient, admin_headers: d
     end_date = datetime.now(timezone.utc)
     start_date = datetime(2020, 1, 1, tzinfo=timezone.utc)
 
+    # Format dates properly for URL encoding
+    start_date_str = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+    end_date_str = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+
     response = client.get(
-        f"/api/v1/audit?start_date={start_date.isoformat()}&end_date={end_date.isoformat()}",
-        headers=admin_headers
+        f"/api/v1/audit?start_date={start_date_str}&end_date={end_date_str}", headers=admin_headers
     )
 
     assert response.status_code == 200
@@ -112,8 +115,7 @@ def test_get_audit_log_filter_by_date_range(client: TestClient, admin_headers: d
 def test_get_audit_log_combined_filters(client: TestClient, admin_headers: dict[str, str], admin_user: User):
     """Test combining multiple filters."""
     response = client.get(
-        f"/api/v1/audit?user_id={admin_user.id}&action=create&resource_type=product",
-        headers=admin_headers
+        f"/api/v1/audit?user_id={admin_user.id}&action=create&resource_type=product", headers=admin_headers
     )
 
     assert response.status_code == 200
@@ -132,9 +134,12 @@ def test_get_audit_log_empty_results(client: TestClient, admin_headers: dict[str
     start_date = datetime(2000, 1, 1, tzinfo=timezone.utc)
     end_date = datetime(2000, 12, 31, tzinfo=timezone.utc)
 
+    # Format dates properly for URL encoding
+    start_date_str = start_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+    end_date_str = end_date.strftime('%Y-%m-%dT%H:%M:%S') + 'Z'
+
     response = client.get(
-        f"/api/v1/audit?start_date={start_date.isoformat()}&end_date={end_date.isoformat()}",
-        headers=admin_headers
+        f"/api/v1/audit?start_date={start_date_str}&end_date={end_date_str}", headers=admin_headers
     )
 
     assert response.status_code == 200

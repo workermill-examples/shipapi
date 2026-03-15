@@ -26,7 +26,7 @@ from src.schemas.user import ApiKeyResponse, LoginRequest, RefreshRequest, Token
 
 # Rate limiter setup
 limiter = Limiter(key_func=get_remote_address)
-router = APIRouter(prefix="/auth", tags=["Authentication"])
+router = APIRouter(prefix="/api/v1/auth", tags=["Authentication"])
 
 
 @router.post("/register", response_model=UserResponse)
@@ -40,22 +40,14 @@ def register(request: Request, user_data: UserCreate, db: Session = Depends(get_
     """
     # Check if user already exists
     existing_user = db.execute(
-        select(User).where(
-            (User.email == user_data.email) | (User.username == user_data.username)
-        )
+        select(User).where((User.email == user_data.email) | (User.username == user_data.username))
     ).scalar_one_or_none()
 
     if existing_user:
         if existing_user.email == user_data.email:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Email already registered"
-            )
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
         else:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Username already taken"
-            )
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Username already taken")
 
     # Create new user
     hashed_pw = hash_password(user_data.password)
@@ -93,10 +85,7 @@ def login(request: Request, login_data: LoginRequest, db: Session = Depends(get_
     ).scalar_one_or_none()
 
     if not user or not verify_password(login_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect email or password")
 
     # Create tokens
     access_token = create_access_token(data={"sub": str(user.id)})
@@ -122,17 +111,11 @@ def refresh_token(request: Request, refresh_data: RefreshRequest, db: Session = 
     # Verify refresh token
     payload = verify_token(refresh_data.refresh_token)
     if not payload:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired refresh token"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
 
     user_id = payload.get("sub")
     if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
     # Verify user exists and is active
     user = db.execute(
@@ -143,10 +126,7 @@ def refresh_token(request: Request, refresh_data: RefreshRequest, db: Session = 
     ).scalar_one_or_none()
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found or inactive"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found or inactive")
 
     # Create new access token
     access_token = create_access_token(data={"sub": str(user.id)})

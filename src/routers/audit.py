@@ -62,9 +62,7 @@ def get_audit_log(
     total = total_result.scalar()
 
     # Get audit entries for current page (newest first)
-    audit_result = db.execute(
-        query.order_by(AuditLog.created_at.desc()).offset(offset).limit(per_page)
-    )
+    audit_result = db.execute(query.order_by(AuditLog.created_at.desc()).offset(offset).limit(per_page))
     audit_entries = audit_result.scalars().all()
 
     return {

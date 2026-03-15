@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from src.dependencies import get_db
 
-router = APIRouter(tags=["Health"])
+router = APIRouter(prefix="/api/v1", tags=["Health"])
 
 
 @router.get("/health")
@@ -20,15 +20,11 @@ def health_check(db: Session = Depends(get_db)):
     try:
         # Test database connectivity
         db.execute(text("SELECT 1"))
-        db_status = "healthy"
+        db_status = "connected"
     except Exception as err:
-        db_status = "unhealthy"
+        db_status = "disconnected"
         raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Database connectivity check failed"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database connectivity check failed"
         ) from err
 
-    return {
-        "status": "healthy",
-        "database": db_status
-    }
+    return {"status": "healthy", "database": db_status, "version": "0.1.0"}
