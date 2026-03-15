@@ -27,7 +27,7 @@ jobs:
             -w /app \
             -e RAILWAY_TOKEN=${{ secrets.RAILWAY_TOKEN }} \
             ghcr.io/railwayapp/cli:latest \
-            railway deploy \
+            railway up \
             --project ${{ secrets.RAILWAY_PROJECT_ID }} \
             --service ${{ secrets.RAILWAY_SVC_ID }} \
             --detach
