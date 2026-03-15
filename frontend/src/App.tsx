@@ -9,28 +9,8 @@ import ProductsPage from '@/pages/ProductsPage';
 import CategoriesPage from '@/pages/CategoriesPage';
 import WarehousesPage from '@/pages/WarehousesPage';
 import StockPage from '@/pages/StockPage';
-
-// Placeholder components for pages not yet implemented
-function AuditPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">Audit Log</h1>
-      <p className="text-muted-foreground">Audit log page coming soon...</p>
-    </div>
-  );
-}
-
-function ApiDocsPage() {
-  return (
-    <div>
-      <h1 className="text-2xl font-bold mb-4">API Documentation</h1>
-      <p className="text-muted-foreground">
-        Visit <a href="/docs" target="_blank" className="text-primary hover:underline">Swagger UI</a> or{' '}
-        <a href="/redoc" target="_blank" className="text-primary hover:underline">ReDoc</a> for API documentation.
-      </p>
-    </div>
-  );
-}
+import AuditPage from '@/pages/AuditPage';
+import ApiDocsPage from '@/pages/ApiDocsPage';
 
 export default function App() {
   const auth = useAuthProvider();
