@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict
 
@@ -17,7 +17,7 @@ class AuditLogResponse(BaseModel):
     action: str
     resource_type: str
     resource_id: uuid.UUID
-    details: dict[str, Any] | None
-    ip_address: str | None
+    details: Optional[dict[str, Any]]
+    ip_address: Optional[str]
     created_at: datetime
     updated_at: datetime

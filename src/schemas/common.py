@@ -1,13 +1,12 @@
 """Common schemas used across multiple modules."""
 
-from typing import TypeVar
-
+from typing import Generic, TypeVar
 from pydantic import BaseModel, ConfigDict
 
 T = TypeVar("T")
 
 
-class PaginatedResponse[T](BaseModel):
+class PaginatedResponse(BaseModel, Generic[T]):
     """Standard pagination wrapper for list endpoints."""
 
     model_config = ConfigDict(from_attributes=True)
