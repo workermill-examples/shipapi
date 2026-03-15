@@ -36,7 +36,7 @@ jobs:
       - name: Wait for deployment
         run: |
           echo "Waiting for deployment to become healthy..."
-          APP_URL="https://shipapi.workermill.com"
+          APP_URL="https://shipapi-production-c77c.up.railway.app"
           for i in $(seq 1 30); do
             status=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/api/v1/health" 2>/dev/null || echo "000")
             if [ "$status" = "200" ]; then
@@ -51,7 +51,7 @@ jobs:
 
       - name: Run smoke tests
         env:
-          APP_URL: https://shipapi.workermill.com
+          APP_URL: https://shipapi-production-c77c.up.railway.app
           DEMO_EMAIL: demo@workermill.com
           DEMO_PASSWORD: demo1234
         run: |
