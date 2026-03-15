@@ -29,6 +29,7 @@ jobs:
             ghcr.io/railwayapp/cli:latest \
             railway up \
             --project ${{ secrets.RAILWAY_PROJECT_ID }} \
+            --environment ${{ secrets.RAILWAY_ENV_ID }} \
             --service ${{ secrets.RAILWAY_SVC_ID }} \
             --detach
 
