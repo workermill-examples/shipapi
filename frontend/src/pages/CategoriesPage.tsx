@@ -265,14 +265,14 @@ export default function CategoriesPage() {
                   <div className="grid gap-2">
                     <Label htmlFor="parent">Parent Category</Label>
                     <Select
-                      value={formData.parent_id || ""}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, parent_id: value || null }))}
+                      value={formData.parent_id || "__none__"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, parent_id: value === '__none__' ? null : value }))}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select parent category (optional)" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No parent category</SelectItem>
+                        <SelectItem value="__none__">No parent category</SelectItem>
                         {getAvailableParents().map((category) => (
                           <SelectItem key={category.id} value={category.id}>
                             {category.name}
@@ -446,14 +446,14 @@ export default function CategoriesPage() {
             <div className="grid gap-2">
               <Label htmlFor="edit-parent">Parent Category</Label>
               <Select
-                value={formData.parent_id || ""}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, parent_id: value || null }))}
+                value={formData.parent_id || "__none__"}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, parent_id: value === '__none__' ? null : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select parent category (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No parent category</SelectItem>
+                  <SelectItem value="__none__">No parent category</SelectItem>
                   {getAvailableParents().map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}

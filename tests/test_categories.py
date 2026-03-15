@@ -34,6 +34,9 @@ def test_list_categories_success(client: TestClient, regular_user_headers: dict[
         assert "slug" in category
         assert "description" in category
         assert "parent_id" in category
+        assert "product_count" in category  # Should include product count
+        assert isinstance(category["product_count"], int)
+        assert category["product_count"] >= 0  # Should be non-negative
         assert "created_at" in category
         assert "updated_at" in category
 
