@@ -15,10 +15,8 @@ class Category(Base):
 
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     slug: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    parent_id: Mapped[Optional[uuid.UUID]] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True
-    )
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("categories.id"), nullable=True)
 
     # Self-referential relationship
     parent: Mapped[Optional["Category"]] = relationship(
