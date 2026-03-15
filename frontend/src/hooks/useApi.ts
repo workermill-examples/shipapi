@@ -83,6 +83,10 @@ export const usePaginatedApi = <T>(
     error: null,
   });
 
+  // Serialize filters to a stable string to avoid infinite re-render loops
+  // (a new {} object on every render would cause useCallback to recreate fetchData endlessly)
+  const filtersKey = JSON.stringify(filters);
+
   const fetchData = useCallback(async () => {
     if (!baseUrl) return;
 
@@ -96,7 +100,8 @@ export const usePaginatedApi = <T>(
       });
 
       // Add filters to params
-      Object.entries(filters).forEach(([key, value]) => {
+      const parsedFilters = JSON.parse(filtersKey) as Record<string, unknown>;
+      Object.entries(parsedFilters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           params.append(key, value.toString());
         }
@@ -121,7 +126,7 @@ export const usePaginatedApi = <T>(
         error: message,
       });
     }
-  }, [baseUrl, page, perPage, filters]);
+  }, [baseUrl, page, perPage, filtersKey]);
 
   useEffect(() => {
     fetchData();
