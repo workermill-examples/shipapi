@@ -1,3 +1,5 @@
+from typing import Optional
+
 from sqlalchemy import String
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -12,4 +14,4 @@ class User(Base):
     hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     is_admin: Mapped[bool] = mapped_column(default=False, nullable=False)
-    api_key_hash: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    api_key_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

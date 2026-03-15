@@ -1,11 +1,12 @@
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import ConfigDict
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = ConfigDict(env_file=".env")
 
-    DATABASE_URL: str = "postgresql://shipapi:shipapi@localhost:5432/shipapi"
-    JWT_SECRET_KEY: str = "change-me-to-a-long-random-secret-key"
+    DATABASE_URL: str
+    JWT_SECRET_KEY: str
     PORT: int = 8000
 
 
