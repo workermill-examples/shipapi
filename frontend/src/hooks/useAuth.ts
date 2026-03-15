@@ -61,10 +61,10 @@ export const useAuthProvider = (): AuthContextType => {
   const login = useCallback(async (email: string, password: string) => {
     try {
       const response = await api.post('/auth/login', { email, password });
-      const { access_token, refresh_token, user: userData } = response.data;
+      const { access_token, refresh_token } = response.data;
 
       tokenStorage.setTokens(access_token, refresh_token);
-      setUser(userData);
+      await refreshUser();
     } catch (error: unknown) {
       const message = error && typeof error === 'object' && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'detail' in error.response.data
         ? String(error.response.data.detail)
