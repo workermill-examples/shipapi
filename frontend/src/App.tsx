@@ -3,6 +3,7 @@ import { AuthContext, useAuthProvider } from '@/hooks/useAuth';
 import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { LoginPage } from '@/pages/LoginPage';
 import LandingPage from '@/pages/LandingPage';
 import DashboardPage from '@/pages/DashboardPage';
@@ -44,57 +45,71 @@ export default function App() {
           <Route
             index
             element={
-              <div className="animate-fade-in">
-                <DashboardPage />
-              </div>
+              <ErrorBoundary>
+                <div className="animate-fade-in">
+                  <DashboardPage />
+                </div>
+              </ErrorBoundary>
             }
           />
           <Route
             path="products"
             element={
-              <div className="animate-fade-in">
-                <ProductsPage />
-              </div>
+              <ErrorBoundary>
+                <div className="animate-fade-in">
+                  <ProductsPage />
+                </div>
+              </ErrorBoundary>
             }
           />
           <Route
             path="categories"
             element={
-              <div className="animate-fade-in">
-                <CategoriesPage />
-              </div>
+              <ErrorBoundary>
+                <div className="animate-fade-in">
+                  <CategoriesPage />
+                </div>
+              </ErrorBoundary>
             }
           />
           <Route
             path="warehouses"
             element={
-              <div className="animate-fade-in">
-                <WarehousesPage />
-              </div>
+              <ErrorBoundary>
+                <div className="animate-fade-in">
+                  <WarehousesPage />
+                </div>
+              </ErrorBoundary>
             }
           />
           <Route
             path="stock"
             element={
-              <div className="animate-fade-in">
-                <StockPage />
-              </div>
+              <ErrorBoundary>
+                <div className="animate-fade-in">
+                  <StockPage />
+                </div>
+              </ErrorBoundary>
             }
           />
           <Route
             path="audit"
             element={
-              <div className="animate-fade-in">
-                <AuditPage />
-              </div>
+              <ErrorBoundary>
+                <div className="animate-fade-in">
+                  <AuditPage />
+                </div>
+              </ErrorBoundary>
             }
           />
           <Route
             path="api-docs"
             element={
-              <div className="animate-fade-in">
-                <ApiDocsPage />
-              </div>
+              <ErrorBoundary>
+                <div className="animate-fade-in">
+                  <ApiDocsPage />
+                </div>
+              </ErrorBoundary>
             }
           />
         </Route>

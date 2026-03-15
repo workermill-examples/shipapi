@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import {
   BarChart,
   Bar,
@@ -70,6 +71,7 @@ interface AuditLogEntry {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const { data: showcaseStats, isLoading: statsLoading } = useShowcaseStats();
   const { data: stockData, isLoading: stockLoading } = useStockLevels();
   const { data: warehouseData } = useWarehouses();
@@ -426,15 +428,15 @@ export default function DashboardPage() {
             <CardTitle>Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full justify-start" size="sm">
+            <Button className="w-full justify-start" size="sm" onClick={() => navigate('/dashboard/products')}>
               <Plus className="mr-2 h-4 w-4" />
               Add Product
             </Button>
-            <Button variant="outline" className="w-full justify-start" size="sm">
+            <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => navigate('/dashboard/stock')}>
               <ArrowRightLeft className="mr-2 h-4 w-4" />
               Transfer Stock
             </Button>
-            <Button variant="outline" className="w-full justify-start" size="sm">
+            <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => navigate('/dashboard/api-docs')}>
               <ExternalLink className="mr-2 h-4 w-4" />
               View API Docs
             </Button>
