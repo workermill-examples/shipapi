@@ -71,7 +71,7 @@ export const useAuthProvider = (): AuthContextType => {
         : 'Login failed';
       throw new Error(message);
     }
-  }, []);
+  }, [refreshUser]);
 
   // Logout function
   const logout = useCallback(() => {
