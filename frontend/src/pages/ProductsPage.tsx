@@ -44,7 +44,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { usePaginatedApi, useApi, useMutation } from '@/hooks/useApi';
+import { usePaginatedApi, useMutation } from '@/hooks/useApi';
 
 interface Product {
   id: string;
@@ -123,8 +123,9 @@ export default function ProductsPage() {
   } = usePaginatedApi<Product>('/products', currentPage, perPage, filters);
 
   const {
-    data: categories,
-  } = useApi<Category[]>('/categories');
+    data: categoriesData,
+  } = usePaginatedApi<Category>('/categories');
+  const categories = categoriesData?.items ?? null;
 
   const { mutate, isLoading: isMutating } = useMutation<Product, ProductFormData>();
 

@@ -29,7 +29,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useApi, useMutation } from '@/hooks/useApi';
+import { usePaginatedApi, useMutation } from '@/hooks/useApi';
 
 interface WarehouseResponse {
   id: string;
@@ -70,11 +70,12 @@ export default function WarehousesPage() {
 
   // API hooks
   const {
-    data: warehouses,
+    data: warehousesData,
     isLoading: isLoadingWarehouses,
     error: warehousesError,
     refetch: refetchWarehouses,
-  } = useApi<WarehouseResponse[]>('/warehouses');
+  } = usePaginatedApi<WarehouseResponse>('/warehouses');
+  const warehouses = warehousesData?.items ?? null;
 
   const { mutate, isLoading: isMutating } = useMutation<WarehouseResponse, WarehouseFormData>();
 

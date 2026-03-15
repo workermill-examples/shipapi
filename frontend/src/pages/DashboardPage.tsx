@@ -31,7 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useShowcaseStats, useStockLevels, useCategories, useAuditLog } from '@/hooks/useApi';
+import { useShowcaseStats, useStockLevels, useCategories, useWarehouses, useAuditLog } from '@/hooks/useApi';
 
 interface StockLevel {
   id: string;
@@ -39,16 +39,8 @@ interface StockLevel {
   warehouse_id: string;
   quantity: number;
   low_stock_threshold: number;
-  product: {
-    name: string;
-    category: {
-      name: string;
-    };
-  };
-  warehouse: {
-    name: string;
-    code: string;
-  };
+  created_at: string;
+  updated_at: string;
 }
 
 interface Category {
@@ -59,24 +51,41 @@ interface Category {
   product_count?: number;
 }
 
+interface Warehouse {
+  id: string;
+  name: string;
+  code: string;
+}
+
 interface AuditLogEntry {
   id: string;
+  user_id: string;
   action: string;
   resource_type: string;
   resource_id: string;
-  details: Record<string, unknown>;
+  details: Record<string, unknown> | null;
+  ip_address: string | null;
   created_at: string;
-  user: {
-    username: string;
-    email: string;
-  };
+  updated_at: string;
 }
 
 export default function DashboardPage() {
   const { data: showcaseStats, isLoading: statsLoading } = useShowcaseStats();
   const { data: stockData, isLoading: stockLoading } = useStockLevels();
+  const { data: warehouseData } = useWarehouses();
   const { data: categories, isLoading: categoriesLoading } = useCategories();
   const { data: auditData, isLoading: auditLoading } = useAuditLog({}, 1);
+
+  // Build warehouse name lookup
+  const warehouseNames = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (warehouseData?.items) {
+      (warehouseData.items as Warehouse[]).forEach((w) => {
+        map[w.id] = w.name;
+      });
+    }
+    return map;
+  }, [warehouseData]);
 
   // Process data for charts
   const stockByWarehouse = useMemo(() => {
@@ -85,23 +94,23 @@ export default function DashboardPage() {
     const warehouseStock: Record<string, { name: string; totalStock: number }> = {};
 
     (stockData.items as StockLevel[]).forEach((stock) => {
-      const warehouseName = stock.warehouse.name;
-      if (!warehouseStock[warehouseName]) {
-        warehouseStock[warehouseName] = {
-          name: warehouseName,
+      const whId = stock.warehouse_id;
+      if (!warehouseStock[whId]) {
+        warehouseStock[whId] = {
+          name: warehouseNames[whId] || `Warehouse ${Object.keys(warehouseStock).length + 1}`,
           totalStock: 0,
         };
       }
-      warehouseStock[warehouseName].totalStock += stock.quantity;
+      warehouseStock[whId].totalStock += stock.quantity;
     });
 
     return Object.values(warehouseStock);
-  }, [stockData]);
+  }, [stockData, warehouseNames]);
 
   const productsByCategory = useMemo(() => {
-    if (!categories) return [];
+    if (!categories?.items) return [];
 
-    return (categories as Category[])
+    return (categories.items as Category[])
       .filter(cat => cat.product_count && cat.product_count > 0)
       .map(cat => ({
         name: cat.name,
@@ -391,7 +400,7 @@ export default function DashboardPage() {
                             {formatActionText(entry.action, entry.resource_type)}
                           </Badge>
                           <span className="text-sm text-muted-foreground">
-                            by {entry.user.username}
+                            {entry.resource_type}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground">

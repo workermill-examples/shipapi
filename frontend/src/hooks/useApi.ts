@@ -187,12 +187,12 @@ export const useProducts = (filters: Record<string, unknown> = {}, page: number 
   return usePaginatedApi('/products', page, 50, filters);
 };
 
-export const useCategories = () => {
-  return useApi<unknown[]>('/categories');
+export const useCategories = (filters: Record<string, unknown> = {}, page: number = 1) => {
+  return usePaginatedApi('/categories', page, 50, filters);
 };
 
-export const useWarehouses = () => {
-  return useApi<unknown[]>('/warehouses');
+export const useWarehouses = (filters: Record<string, unknown> = {}, page: number = 1) => {
+  return usePaginatedApi('/warehouses', page, 50, filters);
 };
 
 export const useStockLevels = (filters: Record<string, unknown> = {}, page: number = 1) => {
@@ -203,12 +203,27 @@ export const useAuditLog = (filters: Record<string, unknown> = {}, page: number 
   return usePaginatedApi('/audit', page, 50, filters);
 };
 
+interface ShowcaseStats {
+  total_products: number;
+  total_categories: number;
+  total_warehouses: number;
+  total_stock_transfers: number;
+  low_stock_alerts: number;
+}
+
 export const useShowcaseStats = () => {
-  return useApi<{
-    total_products: number;
-    total_categories: number;
-    total_warehouses: number;
-    total_stock_transfers: number;
-    low_stock_alerts: number;
-  }>('/showcase/stats');
+  const [state, setState] = useState<ApiState<ShowcaseStats>>({
+    data: null,
+    isLoading: true,
+    error: null,
+  });
+
+  useEffect(() => {
+    fetch('/showcase/stats')
+      .then(res => res.json())
+      .then((data: ShowcaseStats) => setState({ data, isLoading: false, error: null }))
+      .catch(err => setState({ data: null, isLoading: false, error: err.message }));
+  }, []);
+
+  return state;
 };

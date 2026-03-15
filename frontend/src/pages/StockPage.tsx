@@ -38,7 +38,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { usePaginatedApi, useApi, useMutation } from '@/hooks/useApi';
+import { usePaginatedApi, useMutation } from '@/hooks/useApi';
 
 interface StockLevel {
   id: string;
@@ -155,11 +155,12 @@ export default function StockPage() {
   } = usePaginatedApi<StockLevel>('/stock', currentPage, 50, filters);
 
   const {
-    data: lowStockData,
+    data: lowStockResponse,
     isLoading: isLoadingLowStock,
     error: lowStockError,
     refetch: refetchLowStock,
-  } = useApi<StockLevel[]>('/stock/alerts');
+  } = usePaginatedApi<StockLevel>('/stock/alerts');
+  const lowStockData = lowStockResponse?.items ?? null;
 
   const {
     data: transfersData,
@@ -169,12 +170,14 @@ export default function StockPage() {
   } = usePaginatedApi<StockTransfer>('/stock/transfers', 1, 20, {});
 
   const {
-    data: warehouses,
-  } = useApi<Warehouse[]>('/warehouses');
+    data: warehousesData,
+  } = usePaginatedApi<Warehouse>('/warehouses');
+  const warehouses = warehousesData?.items ?? null;
 
   const {
-    data: products,
-  } = useApi<Product[]>('/products');
+    data: productsData,
+  } = usePaginatedApi<Product>('/products');
+  const products = productsData?.items ?? null;
 
   const { mutate: transferMutate, isLoading: isTransferring } = useMutation();
   const { mutate: adjustMutate, isLoading: isAdjusting } = useMutation();
