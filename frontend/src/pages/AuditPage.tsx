@@ -170,12 +170,12 @@ export default function AuditPage() {
               />
             </div>
 
-            <Select value={selectedAction} onValueChange={setSelectedAction}>
+            <Select value={selectedAction || "__all__"} onValueChange={(val) => setSelectedAction(val === '__all__' ? '' : val)}>
               <SelectTrigger>
                 <SelectValue placeholder="All actions" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All actions</SelectItem>
+                <SelectItem value="__all__">All actions</SelectItem>
                 <SelectItem value="create">Create</SelectItem>
                 <SelectItem value="update">Update</SelectItem>
                 <SelectItem value="delete">Delete</SelectItem>
@@ -185,12 +185,12 @@ export default function AuditPage() {
               </SelectContent>
             </Select>
 
-            <Select value={selectedEntityType} onValueChange={setSelectedEntityType}>
+            <Select value={selectedEntityType || "__all__"} onValueChange={(val) => setSelectedEntityType(val === '__all__' ? '' : val)}>
               <SelectTrigger>
                 <SelectValue placeholder="All entity types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All entity types</SelectItem>
+                <SelectItem value="__all__">All entity types</SelectItem>
                 <SelectItem value="product">Product</SelectItem>
                 <SelectItem value="category">Category</SelectItem>
                 <SelectItem value="warehouse">Warehouse</SelectItem>
