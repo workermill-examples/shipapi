@@ -10,7 +10,6 @@ Provides fixtures for:
 """
 
 import os
-import site
 import sys
 import uuid
 from collections.abc import Generator
@@ -31,11 +30,13 @@ _saved_path = sys.path[:]
 sys.path = [p for p in sys.path if p != "" and os.path.abspath(p) != os.getcwd()]
 
 # Now we can safely import alembic package
-from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
+
+from alembic import command  # noqa: E402
 
 # Restore original path
 sys.path = _saved_path
+
 from src.auth import create_access_token, hash_password  # noqa: E402
 from src.database import get_db  # noqa: E402
 from src.main import create_app  # noqa: E402
