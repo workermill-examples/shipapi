@@ -17,37 +17,37 @@ import { Separator } from '@/components/ui/separator';
 const navigationItems = [
   {
     name: 'Dashboard',
-    href: '/',
+    href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
     name: 'Products',
-    href: '/products',
+    href: '/dashboard/products',
     icon: Package,
   },
   {
     name: 'Categories',
-    href: '/categories',
+    href: '/dashboard/categories',
     icon: FolderOpen,
   },
   {
     name: 'Warehouses',
-    href: '/warehouses',
+    href: '/dashboard/warehouses',
     icon: Warehouse,
   },
   {
     name: 'Stock',
-    href: '/stock',
+    href: '/dashboard/stock',
     icon: BarChart3,
   },
   {
     name: 'Audit',
-    href: '/audit',
+    href: '/dashboard/audit',
     icon: Activity,
   },
   {
     name: 'API Docs',
-    href: '/api-docs',
+    href: '/dashboard/api-docs',
     icon: FileText,
   },
 ];

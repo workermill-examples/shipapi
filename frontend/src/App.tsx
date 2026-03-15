@@ -4,6 +4,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/components/Layout';
 import { LoginPage } from '@/pages/LoginPage';
+import LandingPage from '@/pages/LandingPage';
 import DashboardPage from '@/pages/DashboardPage';
 import ProductsPage from '@/pages/ProductsPage';
 import CategoriesPage from '@/pages/CategoriesPage';
@@ -18,7 +19,10 @@ export default function App() {
   return (
     <AuthContext.Provider value={auth}>
       <Routes>
-        {/* Public route */}
+        {/* Public landing page route */}
+        <Route path="/" element={<div className="animate-fade-in"><LandingPage /></div>} />
+
+        {/* Public login route */}
         <Route
           path="/login"
           element={
@@ -30,7 +34,7 @@ export default function App() {
 
         {/* Protected routes with layout */}
         <Route
-          path="/"
+          path="/dashboard"
           element={
             <ProtectedRoute>
               <Layout />
@@ -103,7 +107,7 @@ export default function App() {
               <div className="text-center animate-slide-in-from-bottom">
                 <h1 className="text-4xl font-bold mb-4">404</h1>
                 <p className="text-muted-foreground mb-4">Page not found</p>
-                <a href="/" className="text-primary hover:underline">
+                <a href="/dashboard" className="text-primary hover:underline">
                   Go back to dashboard
                 </a>
               </div>

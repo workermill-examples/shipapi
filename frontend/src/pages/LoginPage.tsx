@@ -20,7 +20,7 @@ export function LoginPage() {
 
   // Redirect if already authenticated
   if (isAuthenticated) {
-    const from = (location.state as { from?: string })?.from || '/';
+    const from = (location.state as { from?: string })?.from || '/dashboard';
     return <Navigate to={from} replace />;
   }
 
