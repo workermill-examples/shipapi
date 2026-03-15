@@ -35,8 +35,19 @@ jobs:
 
       - name: Wait for deployment
         run: |
-          echo "Waiting 90 seconds for deployment to complete..."
-          sleep 90
+          echo "Waiting for deployment to become healthy..."
+          APP_URL="https://shipapi.workermill.com"
+          for i in $(seq 1 30); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/api/v1/health" 2>/dev/null || echo "000")
+            if [ "$status" = "200" ]; then
+              echo "Health check passed after $((i * 10)) seconds"
+              exit 0
+            fi
+            echo "Attempt $i/30: status=$status, retrying in 10s..."
+            sleep 10
+          done
+          echo "Deployment did not become healthy after 300 seconds"
+          exit 1
 
       - name: Run smoke tests
         env:
@@ -46,7 +57,7 @@ jobs:
         run: |
           set -e
 
-          echo "🔍 Starting smoke tests for $APP_URL"
+          echo "Starting smoke tests for $APP_URL"
 
           # Test 1: Health check
           echo "1. Testing health endpoint..."
