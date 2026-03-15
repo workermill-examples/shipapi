@@ -1,0 +1,228 @@
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Railway
+        run: |
+          docker run --rm \
+            -v $(pwd):/app \
+            -w /app \
+            -e RAILWAY_TOKEN=${{ secrets.RAILWAY_TOKEN }} \
+            ghcr.io/railwayapp/cli:latest \
+            railway deploy \
+            --project ${{ secrets.RAILWAY_PROJECT_ID }} \
+            --service ${{ secrets.RAILWAY_SVC_ID }} \
+            --detach
+
+      - name: Wait for deployment
+        run: |
+          echo "Waiting 90 seconds for deployment to complete..."
+          sleep 90
+
+      - name: Run smoke tests
+        env:
+          APP_URL: https://shipapi.workermill.com
+          DEMO_EMAIL: demo@workermill.com
+          DEMO_PASSWORD: demo1234
+        run: |
+          set -e
+
+          echo "🔍 Starting smoke tests for $APP_URL"
+
+          # Test 1: Health check
+          echo "1. Testing health endpoint..."
+          response=$(curl -s -w "%{http_code}" -o /tmp/health.json "$APP_URL/api/v1/health")
+          if [ "$response" != "200" ]; then
+            echo "❌ Health check failed with status $response"
+            exit 1
+          fi
+
+          # Verify JSON shape
+          if ! grep -q '"status"' /tmp/health.json; then
+            echo "❌ Health check response missing 'status' field"
+            cat /tmp/health.json
+            exit 1
+          fi
+          echo "✅ Health check passed"
+
+          # Test 2: Auth flow - login and get token
+          echo "2. Testing auth login..."
+          login_response=$(curl -s -w "%{http_code}" -o /tmp/login.json \
+            -X POST "$APP_URL/api/v1/auth/login" \
+            -H "Content-Type: application/json" \
+            -d '{"email":"'"$DEMO_EMAIL"'","password":"'"$DEMO_PASSWORD"'"}')
+
+          if [ "$login_response" != "200" ]; then
+            echo "❌ Login failed with status $login_response"
+            cat /tmp/login.json
+            exit 1
+          fi
+
+          # Extract access token
+          if ! grep -q '"access_token"' /tmp/login.json; then
+            echo "❌ Login response missing 'access_token' field"
+            cat /tmp/login.json
+            exit 1
+          fi
+
+          access_token=$(grep -o '"access_token":"[^"]*"' /tmp/login.json | cut -d'"' -f4)
+          if [ -z "$access_token" ]; then
+            echo "❌ Failed to extract access token"
+            exit 1
+          fi
+          echo "✅ Auth login passed"
+
+          # Test 3: Seeded data - verify products
+          echo "3. Testing seeded products data..."
+          products_response=$(curl -s -w "%{http_code}" -o /tmp/products.json \
+            -H "Authorization: Bearer $access_token" \
+            "$APP_URL/api/v1/products")
+
+          if [ "$products_response" != "200" ]; then
+            echo "❌ Products endpoint failed with status $products_response"
+            exit 1
+          fi
+
+          # Verify total >= 40 products
+          total=$(grep -o '"total":[0-9]*' /tmp/products.json | cut -d':' -f2)
+          if [ "$total" -lt 40 ]; then
+            echo "❌ Expected at least 40 products, got $total"
+            cat /tmp/products.json
+            exit 1
+          fi
+          echo "✅ Seeded data test passed ($total products found)"
+
+          # Test 4: Search functionality
+          echo "4. Testing search functionality..."
+          search_response=$(curl -s -w "%{http_code}" -o /tmp/search.json \
+            -H "Authorization: Bearer $access_token" \
+            "$APP_URL/api/v1/products?search=sensor")
+
+          if [ "$search_response" != "200" ]; then
+            echo "❌ Search failed with status $search_response"
+            exit 1
+          fi
+
+          # Verify results returned (should have items array)
+          if ! grep -q '"items":\[' /tmp/search.json; then
+            echo "❌ Search response missing 'items' array"
+            cat /tmp/search.json
+            exit 1
+          fi
+          echo "✅ Search functionality passed"
+
+          # Test 5: Showcase stats (no auth required)
+          echo "5. Testing showcase stats endpoint..."
+          stats_response=$(curl -s -w "%{http_code}" -o /tmp/stats.json \
+            "$APP_URL/showcase/stats")
+
+          if [ "$stats_response" != "200" ]; then
+            echo "❌ Showcase stats failed with status $stats_response"
+            exit 1
+          fi
+
+          # Verify JSON shape with expected fields
+          for field in "total_products" "total_categories" "total_warehouses" "total_stock_transfers" "low_stock_alerts"; do
+            if ! grep -q "\"$field\":" /tmp/stats.json; then
+              echo "❌ Showcase stats missing '$field' field"
+              cat /tmp/stats.json
+              exit 1
+            fi
+          done
+          echo "✅ Showcase stats passed"
+
+          # Test 6: Swagger docs
+          echo "6. Testing Swagger docs..."
+          docs_response=$(curl -s -w "%{http_code}" -o /tmp/docs.html \
+            "$APP_URL/docs")
+
+          if [ "$docs_response" != "200" ]; then
+            echo "❌ Swagger docs failed with status $docs_response"
+            exit 1
+          fi
+
+          # Verify it's HTML content
+          if ! grep -q "swagger" /tmp/docs.html; then
+            echo "❌ Swagger docs doesn't contain expected content"
+            exit 1
+          fi
+          echo "✅ Swagger docs passed"
+
+          # Test 7: ReDoc docs
+          echo "7. Testing ReDoc docs..."
+          redoc_response=$(curl -s -w "%{http_code}" -o /tmp/redoc.html \
+            "$APP_URL/redoc")
+
+          if [ "$redoc_response" != "200" ]; then
+            echo "❌ ReDoc docs failed with status $redoc_response"
+            exit 1
+          fi
+
+          # Verify it's HTML content
+          if ! grep -q "redoc" /tmp/redoc.html; then
+            echo "❌ ReDoc docs doesn't contain expected content"
+            exit 1
+          fi
+          echo "✅ ReDoc docs passed"
+
+          # Test 8: X-Request-Id header
+          echo "8. Testing X-Request-Id header..."
+          headers=$(curl -s -I "$APP_URL/api/v1/health")
+          if ! echo "$headers" | grep -i "x-request-id:"; then
+            echo "❌ X-Request-Id header missing from response"
+            echo "Response headers:"
+            echo "$headers"
+            exit 1
+          fi
+          echo "✅ X-Request-Id header passed"
+
+          # Test 9: Frontend serving
+          echo "9. Testing frontend serving..."
+          frontend_response=$(curl -s -w "%{http_code}" -o /tmp/index.html \
+            "$APP_URL/")
+
+          if [ "$frontend_response" != "200" ]; then
+            echo "❌ Frontend serving failed with status $frontend_response"
+            exit 1
+          fi
+
+          # Verify it's HTML content
+          if ! grep -q "<html" /tmp/index.html; then
+            echo "❌ Frontend response is not HTML"
+            head -20 /tmp/index.html
+            exit 1
+          fi
+          echo "✅ Frontend serving passed"
+
+          echo ""
+          echo "🎉 All smoke tests passed!"
+          echo "✅ Health check: OK"
+          echo "✅ Auth flow: OK"
+          echo "✅ Seeded data: $total products"
+          echo "✅ Search: OK"
+          echo "✅ Showcase stats: OK"
+          echo "✅ Swagger docs: OK"
+          echo "✅ ReDoc docs: OK"
+          echo "✅ X-Request-Id header: OK"
+          echo "✅ Frontend serving: OK"
+
+          # Cleanup
+          rm -f /tmp/*.json /tmp/*.html
