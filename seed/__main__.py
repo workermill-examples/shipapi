@@ -18,7 +18,7 @@ import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from src.auth import hash_password
@@ -531,7 +531,7 @@ def create_products(db: Session, categories: list[Category]) -> list[Product]:
     print("Updating search vectors...")
     for product in products:
         db.execute(
-            "UPDATE products SET search_vector = to_tsvector('english', name || ' ' || COALESCE(description, '')) WHERE id = :product_id",
+            text("UPDATE products SET search_vector = to_tsvector('english', name || ' ' || COALESCE(description, '')) WHERE id = :product_id"),
             {"product_id": str(product.id)},
         )
 
