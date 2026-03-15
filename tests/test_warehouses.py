@@ -35,6 +35,16 @@ def test_list_warehouses_success(client: TestClient, regular_user_headers: dict[
         assert "created_at" in warehouse
         assert "updated_at" in warehouse
 
+        # Check stock summary is included in list endpoint
+        assert "stock_summary" in warehouse
+        if warehouse["stock_summary"]:
+            assert "total_items" in warehouse["stock_summary"]
+            assert "total_quantity" in warehouse["stock_summary"]
+            assert isinstance(warehouse["stock_summary"]["total_items"], int)
+            assert isinstance(warehouse["stock_summary"]["total_quantity"], int)
+            assert warehouse["stock_summary"]["total_items"] >= 0
+            assert warehouse["stock_summary"]["total_quantity"] >= 0
+
 
 def test_list_warehouses_pagination(client: TestClient, regular_user_headers: dict[str, str]):
     """Test warehouse listing pagination."""
