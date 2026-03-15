@@ -36,13 +36,14 @@ COPY seed/ ./seed/
 # Install Python dependencies into virtual environment
 RUN uv sync --frozen --no-dev
 
-# Stage 3: Final runtime image
-FROM python:3.13-alpine
+# Stage 3: Final runtime image (MUST be slim, NOT alpine — musl/glibc ABI mismatch)
+FROM python:3.13-slim
 
 # Install runtime dependencies for PostgreSQL client and create user in single layer
-RUN apk add --no-cache libpq \
-    && addgroup -S shipapi \
-    && adduser -S -G shipapi -s /bin/false shipapi
+RUN apt-get update && apt-get install -y --no-install-recommends libpq5 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd -r shipapi \
+    && useradd -r -g shipapi -s /bin/false shipapi
 
 WORKDIR /app
 
