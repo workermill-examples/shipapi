@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    ports: ["5432:5432"]
+    environment:
+      POSTGRES_USER: shipapi
+      POSTGRES_PASSWORD: shipapi
+      POSTGRES_DB: shipapi
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shipapi"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
