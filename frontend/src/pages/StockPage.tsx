@@ -363,12 +363,12 @@ export default function StockPage() {
             </div>
             <div>
               <Label htmlFor="warehouse-filter">Warehouse</Label>
-              <Select value={selectedWarehouse} onValueChange={setSelectedWarehouse}>
+              <Select value={selectedWarehouse || "__all__"} onValueChange={(val) => setSelectedWarehouse(val === '__all__' ? '' : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All warehouses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All warehouses</SelectItem>
+                  <SelectItem value="__all__">All warehouses</SelectItem>
                   {warehouses?.map((warehouse) => (
                     <SelectItem key={warehouse.id} value={warehouse.id}>
                       {warehouse.name} ({warehouse.code})
@@ -379,12 +379,12 @@ export default function StockPage() {
             </div>
             <div>
               <Label htmlFor="product-filter">Product</Label>
-              <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+              <Select value={selectedProduct || "__all__"} onValueChange={(val) => setSelectedProduct(val === '__all__' ? '' : val)}>
                 <SelectTrigger>
                   <SelectValue placeholder="All products" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All products</SelectItem>
+                  <SelectItem value="__all__">All products</SelectItem>
                   {products?.filter(p => p.is_active).map((product) => (
                     <SelectItem key={product.id} value={product.id}>
                       {product.name} ({product.sku})
