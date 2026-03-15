@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -112,6 +112,12 @@ def create_app() -> FastAPI:
     if frontend_dist.exists():
         app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="static")
 
+    # Handle invalid auth routes that are missing the /api/v1 prefix
+    @app.api_route("/auth/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"], include_in_schema=False)
+    async def invalid_auth_routes(path: str) -> None:
+        """Return 404 for auth routes without proper API prefix."""
+        raise HTTPException(status_code=404, detail="Not found")
+
     # SPA catch-all route for frontend routing
     @app.get("/{path:path}", include_in_schema=False)
     async def spa_fallback(request: Request, path: str) -> FileResponse:
@@ -119,7 +125,6 @@ def create_app() -> FastAPI:
         # Skip API routes and documentation routes
         if path.startswith("api/") or path in ("docs", "redoc", "openapi.json"):
             # Let FastAPI handle 404 for API routes
-            from fastapi import HTTPException
             raise HTTPException(status_code=404, detail="Not found")
 
         # Serve index.html for frontend SPA routing
@@ -129,7 +134,6 @@ def create_app() -> FastAPI:
             return FileResponse(str(index_file))
 
         # Fallback if index.html doesn't exist
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Frontend not available")
 
     return app
