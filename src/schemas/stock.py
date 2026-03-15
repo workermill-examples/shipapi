@@ -2,7 +2,6 @@
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -37,7 +36,7 @@ class StockTransferCreate(BaseModel):
     from_warehouse_id: uuid.UUID
     to_warehouse_id: uuid.UUID
     quantity: int = Field(gt=0, description="Quantity to transfer")
-    notes: Optional[str] = Field(default=None, max_length=500, description="Transfer notes")
+    notes: str | None = Field(default=None, max_length=500, description="Transfer notes")
 
 
 class StockTransferResponse(BaseModel):
@@ -50,6 +49,6 @@ class StockTransferResponse(BaseModel):
     from_warehouse_id: uuid.UUID
     to_warehouse_id: uuid.UUID
     quantity: int
-    notes: Optional[str]
+    notes: str | None
     created_at: datetime
     updated_at: datetime
