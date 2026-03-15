@@ -10,24 +10,36 @@ Provides fixtures for:
 """
 
 import os
+import site
+import sys
 import uuid
 from collections.abc import Generator
 from pathlib import Path
 
 import psycopg2
 import pytest
-from alembic import command
-from alembic.config import Config
 from fastapi.testclient import TestClient
 from psycopg2 import sql
 from psycopg2.extensions import ISOLATION_LEVEL_AUTOCOMMIT
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from src.auth import create_access_token, hash_password
-from src.database import get_db
-from src.main import create_app
-from src.models import AuditLog, Category, Product, StockLevel, StockTransfer, User, Warehouse
+# Fix alembic import issue - the local ./alembic directory conflicts with alembic package
+# We need to import the alembic package, not the local directory
+# Save the current path and remove current directory from it
+_saved_path = sys.path[:]
+sys.path = [p for p in sys.path if p != "" and os.path.abspath(p) != os.getcwd()]
+
+# Now we can safely import alembic package
+from alembic import command  # noqa: E402
+from alembic.config import Config  # noqa: E402
+
+# Restore original path
+sys.path = _saved_path
+from src.auth import create_access_token, hash_password  # noqa: E402
+from src.database import get_db  # noqa: E402
+from src.main import create_app  # noqa: E402
+from src.models import AuditLog, Category, Product, StockLevel, StockTransfer, User, Warehouse  # noqa: E402
 
 # Test database configuration
 TEST_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://shipapi:shipapi@localhost:5432/shipapi_test").replace(

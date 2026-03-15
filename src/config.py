@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env")
 
     DATABASE_URL: str
-    JWT_SECRET_KEY: str
+    JWT_SECRET_KEY: str = "test-secret-key-for-development-only"
     PORT: int = 8000
 
 
