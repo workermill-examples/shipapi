@@ -1,7 +1,11 @@
 """FastAPI application factory with middleware, CORS, and router configuration."""
 
-from fastapi import FastAPI
+from pathlib import Path
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
@@ -103,18 +107,30 @@ def create_app() -> FastAPI:
     # Showcase router (outside /api/v1 prefix)
     app.include_router(showcase.router)
 
-    # Root endpoint for basic service info
-    @app.get("/", include_in_schema=False)
-    def root() -> dict[str, str]:
-        """Root endpoint returning basic service information."""
-        return {
-            "service": "ShipAPI",
-            "version": "0.1.0",
-            "description": "Production-grade inventory management REST API",
-            "docs": "/docs",
-            "redoc": "/redoc",
-            "health": "/api/v1/health",
-        }
+    # Static files for frontend assets
+    frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+    if frontend_dist.exists():
+        app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="static")
+
+    # SPA catch-all route for frontend routing
+    @app.get("/{path:path}", include_in_schema=False)
+    async def spa_fallback(request: Request, path: str) -> FileResponse:
+        """Serve index.html for SPA frontend routing."""
+        # Skip API routes and documentation routes
+        if path.startswith("api/") or path in ("docs", "redoc", "openapi.json"):
+            # Let FastAPI handle 404 for API routes
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not found")
+
+        # Serve index.html for frontend SPA routing
+        frontend_dist = Path(__file__).parent.parent / "frontend" / "dist"
+        index_file = frontend_dist / "index.html"
+        if index_file.exists():
+            return FileResponse(str(index_file))
+
+        # Fallback if index.html doesn't exist
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Frontend not available")
 
     return app
 
