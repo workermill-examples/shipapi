@@ -48,8 +48,20 @@ def list_categories(
     categories_result = db.execute(select(Category).order_by(Category.name).offset(offset).limit(per_page))
     categories = categories_result.scalars().all()
 
+    # Compute product_count for each category
+    category_responses = []
+    for category in categories:
+        # Calculate product count for this category
+        product_count_result = db.execute(select(func.count(Product.id)).where(Product.category_id == category.id))
+        product_count = product_count_result.scalar()
+
+        # Convert to response model and add product count
+        response_data = CategoryResponse.model_validate(category)
+        response_data.product_count = product_count
+        category_responses.append(response_data)
+
     return {
-        "items": categories,
+        "items": category_responses,
         "total": total,
         "page": page,
         "per_page": per_page,
