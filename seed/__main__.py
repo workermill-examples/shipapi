@@ -12,6 +12,8 @@ Creates demo data for showcasing the inventory management system:
 This script is idempotent - safe to run multiple times.
 """
 
+import random
+import re
 import uuid
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -27,8 +29,7 @@ from src.models import AuditLog, Category, Product, StockLevel, StockTransfer, U
 
 def slugify(name: str) -> str:
     """Convert name to slug format."""
-    import re
-    return re.sub(r'[^a-z0-9]+', '-', name.lower()).strip('-')
+    return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
 def create_demo_user(db: Session) -> User:
@@ -49,7 +50,7 @@ def create_demo_user(db: Session) -> User:
             username="demo_admin",
             hashed_password=hash_password("demo1234"),
             is_admin=True,
-            is_active=True
+            is_active=True,
         )
         db.add(demo_user)
 
@@ -79,12 +80,7 @@ def create_categories(db: Session) -> list[Category]:
     ]
 
     for name, description in top_level_data:
-        category = Category(
-            name=name,
-            slug=slugify(name),
-            description=description,
-            parent_id=None
-        )
+        category = Category(name=name, slug=slugify(name), description=description, parent_id=None)
         db.add(category)
         categories.append(category)
 
@@ -96,22 +92,18 @@ def create_categories(db: Session) -> list[Category]:
         ("Sensors", "Various types of sensors and detection equipment", 0),
         ("Circuit Boards", "PCBs and electronic circuit components", 0),
         ("Cables & Connectors", "Wiring solutions and connection hardware", 0),
-
         # Industrial Tools subcategories
         ("Power Tools", "Electric and pneumatic power tools", 1),
         ("Hand Tools", "Manual tools and precision instruments", 1),
         ("Measuring Equipment", "Precision measurement and calibration tools", 1),
-
         # Safety Equipment subcategories
         ("Head Protection", "Helmets, hard hats, and protective headgear", 2),
         ("Eye & Face Protection", "Safety glasses, goggles, and face shields", 2),
         ("Respiratory Protection", "Masks, respirators, and breathing apparatus", 2),
-
         # Office Supplies subcategories
         ("Writing Materials", "Pens, pencils, and writing accessories", 3),
         ("Paper Products", "Various types of paper and forms", 3),
         ("Filing & Organization", "Folders, binders, and organizational tools", 3),
-
         # Storage Solutions subcategories
         ("Containers", "Bins, boxes, and storage containers", 4),
         ("Shelving Systems", "Racks, shelves, and storage structures", 4),
@@ -120,10 +112,7 @@ def create_categories(db: Session) -> list[Category]:
 
     for name, description, parent_index in subcategory_data:
         subcategory = Category(
-            name=name,
-            slug=slugify(name),
-            description=description,
-            parent_id=categories[parent_index].id
+            name=name, slug=slugify(name), description=description, parent_id=categories[parent_index].id
         )
         db.add(subcategory)
         categories.append(subcategory)
@@ -146,80 +135,373 @@ def create_products(db: Session, categories: list[Category]) -> list[Product]:
     # Product data with realistic names and descriptions for good search testing
     product_data = [
         # Electronics - Sensors
-        ("Digital Temperature Sensor", "DTS-001", "High-precision digital temperature sensor with I2C interface", Decimal("24.99"), True, "sensors"),
-        ("Motion Detection Sensor", "MDS-002", "PIR motion sensor for security and automation applications", Decimal("18.50"), True, "sensors"),
-        ("Pressure Sensor Module", "PSM-003", "Industrial pressure sensor with 4-20mA output", Decimal("89.99"), True, "sensors"),
-
+        (
+            "Digital Temperature Sensor",
+            "DTS-001",
+            "High-precision digital temperature sensor with I2C interface",
+            Decimal("24.99"),
+            True,
+            "sensors",
+        ),
+        (
+            "Motion Detection Sensor",
+            "MDS-002",
+            "PIR motion sensor for security and automation applications",
+            Decimal("18.50"),
+            True,
+            "sensors",
+        ),
+        (
+            "Pressure Sensor Module",
+            "PSM-003",
+            "Industrial pressure sensor with 4-20mA output",
+            Decimal("89.99"),
+            True,
+            "sensors",
+        ),
         # Electronics - Circuit Boards
-        ("Arduino Compatible Board", "ACB-004", "Microcontroller development board compatible with Arduino IDE", Decimal("35.00"), True, "circuit-boards"),
-        ("Raspberry Pi Shield", "RPS-005", "GPIO expansion shield for Raspberry Pi projects", Decimal("28.75"), True, "circuit-boards"),
-        ("Motor Control PCB", "MCP-006", "H-bridge motor controller circuit board", Decimal("42.50"), True, "circuit-boards"),
-
+        (
+            "Arduino Compatible Board",
+            "ACB-004",
+            "Microcontroller development board compatible with Arduino IDE",
+            Decimal("35.00"),
+            True,
+            "circuit-boards",
+        ),
+        (
+            "Raspberry Pi Shield",
+            "RPS-005",
+            "GPIO expansion shield for Raspberry Pi projects",
+            Decimal("28.75"),
+            True,
+            "circuit-boards",
+        ),
+        (
+            "Motor Control PCB",
+            "MCP-006",
+            "H-bridge motor controller circuit board",
+            Decimal("42.50"),
+            True,
+            "circuit-boards",
+        ),
         # Electronics - Cables & Connectors
-        ("USB-C Cable 2M", "UCC-007", "High-quality USB-C charging and data cable", Decimal("12.99"), True, "cables-connectors"),
-        ("Ethernet Connector Kit", "ECK-008", "RJ45 connectors with crimping tool", Decimal("29.99"), True, "cables-connectors"),
-        ("Power Cable Assembly", "PCA-009", "Industrial grade power cable with weatherproof connectors", Decimal("55.00"), True, "cables-connectors"),
-
+        (
+            "USB-C Cable 2M",
+            "UCC-007",
+            "High-quality USB-C charging and data cable",
+            Decimal("12.99"),
+            True,
+            "cables-connectors",
+        ),
+        (
+            "Ethernet Connector Kit",
+            "ECK-008",
+            "RJ45 connectors with crimping tool",
+            Decimal("29.99"),
+            True,
+            "cables-connectors",
+        ),
+        (
+            "Power Cable Assembly",
+            "PCA-009",
+            "Industrial grade power cable with weatherproof connectors",
+            Decimal("55.00"),
+            True,
+            "cables-connectors",
+        ),
         # Industrial Tools - Power Tools
-        ("Cordless Drill Set", "CDS-010", "18V cordless drill with battery and charger", Decimal("149.99"), True, "power-tools"),
-        ("Angle Grinder", "ANG-011", "Professional angle grinder with safety guard", Decimal("89.95"), True, "power-tools"),
-        ("Impact Driver", "IMP-012", "High-torque impact driver for heavy-duty applications", Decimal("125.00"), True, "power-tools"),
-
+        (
+            "Cordless Drill Set",
+            "CDS-010",
+            "18V cordless drill with battery and charger",
+            Decimal("149.99"),
+            True,
+            "power-tools",
+        ),
+        (
+            "Angle Grinder",
+            "ANG-011",
+            "Professional angle grinder with safety guard",
+            Decimal("89.95"),
+            True,
+            "power-tools",
+        ),
+        (
+            "Impact Driver",
+            "IMP-012",
+            "High-torque impact driver for heavy-duty applications",
+            Decimal("125.00"),
+            True,
+            "power-tools",
+        ),
         # Industrial Tools - Hand Tools
-        ("Precision Screwdriver Set", "PSS-013", "15-piece precision screwdriver set with magnetic tips", Decimal("39.99"), True, "hand-tools"),
-        ("Digital Multimeter", "DMM-014", "Professional digital multimeter with auto-ranging", Decimal("79.99"), True, "hand-tools"),
-        ("Adjustable Wrench Set", "AWS-015", "Chrome vanadium steel adjustable wrench set", Decimal("45.50"), True, "hand-tools"),
-
+        (
+            "Precision Screwdriver Set",
+            "PSS-013",
+            "15-piece precision screwdriver set with magnetic tips",
+            Decimal("39.99"),
+            True,
+            "hand-tools",
+        ),
+        (
+            "Digital Multimeter",
+            "DMM-014",
+            "Professional digital multimeter with auto-ranging",
+            Decimal("79.99"),
+            True,
+            "hand-tools",
+        ),
+        (
+            "Adjustable Wrench Set",
+            "AWS-015",
+            "Chrome vanadium steel adjustable wrench set",
+            Decimal("45.50"),
+            True,
+            "hand-tools",
+        ),
         # Industrial Tools - Measuring Equipment
-        ("Digital Caliper", "DCA-016", "Stainless steel digital caliper with LCD display", Decimal("32.99"), True, "measuring-equipment"),
-        ("Laser Level", "LAS-017", "Self-leveling laser level with magnetic mount", Decimal("159.99"), True, "measuring-equipment"),
-        ("Torque Wrench", "TOR-018", "Click-type torque wrench with calibration certificate", Decimal("199.99"), True, "measuring-equipment"),
-
+        (
+            "Digital Caliper",
+            "DCA-016",
+            "Stainless steel digital caliper with LCD display",
+            Decimal("32.99"),
+            True,
+            "measuring-equipment",
+        ),
+        (
+            "Laser Level",
+            "LAS-017",
+            "Self-leveling laser level with magnetic mount",
+            Decimal("159.99"),
+            True,
+            "measuring-equipment",
+        ),
+        (
+            "Torque Wrench",
+            "TOR-018",
+            "Click-type torque wrench with calibration certificate",
+            Decimal("199.99"),
+            True,
+            "measuring-equipment",
+        ),
         # Safety Equipment - Head Protection
-        ("Hard Hat Type I", "HHT-019", "ANSI compliant hard hat with adjustable suspension", Decimal("24.99"), True, "head-protection"),
-        ("Climbing Helmet", "CLH-020", "Lightweight climbing helmet with ventilation", Decimal("89.99"), True, "head-protection"),
-        ("Welding Helmet", "WEL-021", "Auto-darkening welding helmet with grind mode", Decimal("179.99"), True, "head-protection"),
-
+        (
+            "Hard Hat Type I",
+            "HHT-019",
+            "ANSI compliant hard hat with adjustable suspension",
+            Decimal("24.99"),
+            True,
+            "head-protection",
+        ),
+        (
+            "Climbing Helmet",
+            "CLH-020",
+            "Lightweight climbing helmet with ventilation",
+            Decimal("89.99"),
+            True,
+            "head-protection",
+        ),
+        (
+            "Welding Helmet",
+            "WEL-021",
+            "Auto-darkening welding helmet with grind mode",
+            Decimal("179.99"),
+            True,
+            "head-protection",
+        ),
         # Safety Equipment - Eye & Face Protection
-        ("Safety Glasses Clear", "SGC-022", "Anti-fog safety glasses with UV protection", Decimal("15.99"), True, "eye-face-protection"),
-        ("Chemical Goggles", "CHG-023", "Chemical splash goggles with indirect ventilation", Decimal("28.50"), True, "eye-face-protection"),
-        ("Face Shield", "FAS-024", "Full face protection shield with anti-fog coating", Decimal("19.99"), True, "eye-face-protection"),
-
+        (
+            "Safety Glasses Clear",
+            "SGC-022",
+            "Anti-fog safety glasses with UV protection",
+            Decimal("15.99"),
+            True,
+            "eye-face-protection",
+        ),
+        (
+            "Chemical Goggles",
+            "CHG-023",
+            "Chemical splash goggles with indirect ventilation",
+            Decimal("28.50"),
+            True,
+            "eye-face-protection",
+        ),
+        (
+            "Face Shield",
+            "FAS-024",
+            "Full face protection shield with anti-fog coating",
+            Decimal("19.99"),
+            True,
+            "eye-face-protection",
+        ),
         # Safety Equipment - Respiratory Protection
-        ("N95 Respirator Box", "N95-025", "NIOSH approved N95 respirators, box of 20", Decimal("39.99"), True, "respiratory-protection"),
-        ("Half Face Respirator", "HFR-026", "Reusable half-face respirator with P100 filters", Decimal("89.99"), True, "respiratory-protection"),
-        ("Emergency Escape Mask", "EEM-027", "Self-rescue respirator for emergency evacuation", Decimal("299.99"), True, "respiratory-protection"),
-
+        (
+            "N95 Respirator Box",
+            "N95-025",
+            "NIOSH approved N95 respirators, box of 20",
+            Decimal("39.99"),
+            True,
+            "respiratory-protection",
+        ),
+        (
+            "Half Face Respirator",
+            "HFR-026",
+            "Reusable half-face respirator with P100 filters",
+            Decimal("89.99"),
+            True,
+            "respiratory-protection",
+        ),
+        (
+            "Emergency Escape Mask",
+            "EEM-027",
+            "Self-rescue respirator for emergency evacuation",
+            Decimal("299.99"),
+            True,
+            "respiratory-protection",
+        ),
         # Office Supplies - Writing Materials
-        ("Gel Pen Set", "GPS-028", "Smooth writing gel pens in assorted colors", Decimal("12.99"), True, "writing-materials"),
-        ("Mechanical Pencil", "MEC-029", "Professional mechanical pencil with lead refills", Decimal("8.99"), True, "writing-materials"),
-        ("Whiteboard Markers", "WBM-030", "Dry erase markers with fine tip", Decimal("15.99"), True, "writing-materials"),
-
+        (
+            "Gel Pen Set",
+            "GPS-028",
+            "Smooth writing gel pens in assorted colors",
+            Decimal("12.99"),
+            True,
+            "writing-materials",
+        ),
+        (
+            "Mechanical Pencil",
+            "MEC-029",
+            "Professional mechanical pencil with lead refills",
+            Decimal("8.99"),
+            True,
+            "writing-materials",
+        ),
+        (
+            "Whiteboard Markers",
+            "WBM-030",
+            "Dry erase markers with fine tip",
+            Decimal("15.99"),
+            True,
+            "writing-materials",
+        ),
         # Office Supplies - Paper Products
-        ("Copy Paper Ream", "CPR-031", "Premium copy paper, 500 sheets per ream", Decimal("9.99"), True, "paper-products"),
-        ("Sticky Notes Pack", "SNP-032", "Assorted sticky notes in multiple sizes", Decimal("7.99"), True, "paper-products"),
-        ("Legal Pads", "LEG-033", "Yellow legal pads, letter size, pack of 12", Decimal("19.99"), True, "paper-products"),
-
+        (
+            "Copy Paper Ream",
+            "CPR-031",
+            "Premium copy paper, 500 sheets per ream",
+            Decimal("9.99"),
+            True,
+            "paper-products",
+        ),
+        (
+            "Sticky Notes Pack",
+            "SNP-032",
+            "Assorted sticky notes in multiple sizes",
+            Decimal("7.99"),
+            True,
+            "paper-products",
+        ),
+        (
+            "Legal Pads",
+            "LEG-033",
+            "Yellow legal pads, letter size, pack of 12",
+            Decimal("19.99"),
+            True,
+            "paper-products",
+        ),
         # Office Supplies - Filing & Organization
-        ("File Folders", "FIF-034", "Manila file folders with tabs, box of 100", Decimal("24.99"), True, "filing-organization"),
+        (
+            "File Folders",
+            "FIF-034",
+            "Manila file folders with tabs, box of 100",
+            Decimal("24.99"),
+            True,
+            "filing-organization",
+        ),
         ("Binder Set", "BIN-035", "3-ring binders in assorted colors", Decimal("29.99"), True, "filing-organization"),
-        ("Document Organizer", "DOC-036", "Desktop document organizer with multiple slots", Decimal("34.99"), True, "filing-organization"),
-
+        (
+            "Document Organizer",
+            "DOC-036",
+            "Desktop document organizer with multiple slots",
+            Decimal("34.99"),
+            True,
+            "filing-organization",
+        ),
         # Storage Solutions - Containers
-        ("Plastic Storage Bin", "PSB-037", "Clear plastic storage bin with secure lid", Decimal("18.99"), True, "containers"),
-        ("Metal Toolbox", "MET-038", "Heavy-duty metal toolbox with multiple compartments", Decimal("79.99"), True, "containers"),
-        ("Stackable Organizer", "STA-039", "Modular stackable organizer with dividers", Decimal("25.99"), True, "containers"),
-
+        (
+            "Plastic Storage Bin",
+            "PSB-037",
+            "Clear plastic storage bin with secure lid",
+            Decimal("18.99"),
+            True,
+            "containers",
+        ),
+        (
+            "Metal Toolbox",
+            "MET-038",
+            "Heavy-duty metal toolbox with multiple compartments",
+            Decimal("79.99"),
+            True,
+            "containers",
+        ),
+        (
+            "Stackable Organizer",
+            "STA-039",
+            "Modular stackable organizer with dividers",
+            Decimal("25.99"),
+            True,
+            "containers",
+        ),
         # Storage Solutions - Shelving Systems
-        ("Wire Shelf Unit", "WSU-040", "Adjustable wire shelf unit, 4 shelves", Decimal("119.99"), True, "shelving-systems"),
-        ("Heavy Duty Rack", "HDR-041", "Industrial heavy duty storage rack", Decimal("299.99"), True, "shelving-systems"),
-        ("Wall Mount Brackets", "WMB-042", "Heavy duty wall mount brackets for shelving", Decimal("39.99"), True, "shelving-systems"),
-
+        (
+            "Wire Shelf Unit",
+            "WSU-040",
+            "Adjustable wire shelf unit, 4 shelves",
+            Decimal("119.99"),
+            True,
+            "shelving-systems",
+        ),
+        (
+            "Heavy Duty Rack",
+            "HDR-041",
+            "Industrial heavy duty storage rack",
+            Decimal("299.99"),
+            True,
+            "shelving-systems",
+        ),
+        (
+            "Wall Mount Brackets",
+            "WMB-042",
+            "Heavy duty wall mount brackets for shelving",
+            Decimal("39.99"),
+            True,
+            "shelving-systems",
+        ),
         # Storage Solutions - Labels & Identification
-        ("Label Maker", "LAB-043", "Portable label maker with LCD display", Decimal("49.99"), True, "labels-identification"),
-        ("Barcode Scanner", "BAR-044", "Handheld barcode scanner with USB cable", Decimal("89.99"), True, "labels-identification"),
-        ("Asset Tags", "ASS-045", "Durable asset identification tags, pack of 100", Decimal("29.99"), True, "labels-identification"),
-
+        (
+            "Label Maker",
+            "LAB-043",
+            "Portable label maker with LCD display",
+            Decimal("49.99"),
+            True,
+            "labels-identification",
+        ),
+        (
+            "Barcode Scanner",
+            "BAR-044",
+            "Handheld barcode scanner with USB cable",
+            Decimal("89.99"),
+            True,
+            "labels-identification",
+        ),
+        (
+            "Asset Tags",
+            "ASS-045",
+            "Durable asset identification tags, pack of 100",
+            Decimal("29.99"),
+            True,
+            "labels-identification",
+        ),
         # Inactive products (discontinued)
         ("Legacy Sensor Model", "LEG-046", "Discontinued temperature sensor model", Decimal("15.99"), False, "sensors"),
         ("Old Circuit Board", "OLD-047", "Obsolete microcontroller board", Decimal("25.00"), False, "circuit-boards"),
@@ -238,12 +520,7 @@ def create_products(db: Session, categories: list[Category]) -> list[Product]:
             category = categories[0]
 
         product = Product(
-            name=name,
-            sku=sku,
-            description=description,
-            price=price,
-            is_active=is_active,
-            category_id=category.id
+            name=name, sku=sku, description=description, price=price, is_active=is_active, category_id=category.id
         )
         db.add(product)
         products.append(product)
@@ -255,7 +532,7 @@ def create_products(db: Session, categories: list[Category]) -> list[Product]:
     for product in products:
         db.execute(
             "UPDATE products SET search_vector = to_tsvector('english', name || ' ' || COALESCE(description, '')) WHERE id = :product_id",
-            {"product_id": str(product.id)}
+            {"product_id": str(product.id)},
         )
 
     return products
@@ -279,12 +556,7 @@ def create_warehouses(db: Session) -> list[Warehouse]:
 
     warehouses = []
     for name, code, address in warehouse_data:
-        warehouse = Warehouse(
-            name=name,
-            code=code,
-            address=address,
-            is_active=True
-        )
+        warehouse = Warehouse(name=name, code=code, address=address, is_active=True)
         db.add(warehouse)
         warehouses.append(warehouse)
 
@@ -306,7 +578,6 @@ def create_stock_levels(db: Session, products: list[Product], warehouses: list[W
     # Create stock levels for active products across warehouses
     active_products = [p for p in products if p.is_active]
 
-    import random
     random.seed(42)  # For consistent demo data
 
     low_stock_count = 0
@@ -326,10 +597,7 @@ def create_stock_levels(db: Session, products: list[Product], warehouses: list[W
                 threshold = random.choice([10, 15, 20, 25])
 
             stock_level = StockLevel(
-                product_id=product.id,
-                warehouse_id=warehouse.id,
-                quantity=quantity,
-                low_stock_threshold=threshold
+                product_id=product.id, warehouse_id=warehouse.id, quantity=quantity, low_stock_threshold=threshold
             )
             db.add(stock_level)
             stock_levels.append(stock_level)
@@ -343,7 +611,9 @@ def create_stock_levels(db: Session, products: list[Product], warehouses: list[W
     return stock_levels
 
 
-def create_stock_transfers(db: Session, products: list[Product], warehouses: list[Warehouse], admin_user: User) -> list[StockTransfer]:
+def create_stock_transfers(
+    db: Session, products: list[Product], warehouses: list[Warehouse], admin_user: User
+) -> list[StockTransfer]:
     """Create 20 stock transfer records."""
     # Check if transfers already exist
     result = db.execute(select(func.count(StockTransfer.id)))
@@ -355,12 +625,11 @@ def create_stock_transfers(db: Session, products: list[Product], warehouses: lis
     print("Creating stock transfers...")
     transfers = []
 
-    import random
     random.seed(42)  # For consistent demo data
 
     active_products = [p for p in products if p.is_active]
 
-    for i in range(20):
+    for _i in range(20):
         # Select random product and warehouses
         product = random.choice(active_products)
         from_warehouse = random.choice(warehouses)
@@ -385,7 +654,7 @@ def create_stock_transfers(db: Session, products: list[Product], warehouses: lis
             from_warehouse_id=from_warehouse.id,
             to_warehouse_id=to_warehouse.id,
             quantity=quantity,
-            notes=notes
+            notes=notes,
         )
         db.add(transfer)
         transfers.append(transfer)
@@ -393,7 +662,9 @@ def create_stock_transfers(db: Session, products: list[Product], warehouses: lis
     return transfers
 
 
-def create_audit_logs(db: Session, admin_user: User, products: list[Product], categories: list[Category]) -> list[AuditLog]:
+def create_audit_logs(
+    db: Session, admin_user: User, products: list[Product], categories: list[Category]
+) -> list[AuditLog]:
     """Create 50 audit log entries."""
     # Check if audit logs already exist
     result = db.execute(select(func.count(AuditLog.id)))
@@ -405,13 +676,12 @@ def create_audit_logs(db: Session, admin_user: User, products: list[Product], ca
     print("Creating audit log entries...")
     audit_logs = []
 
-    import random
     random.seed(42)  # For consistent demo data
 
     actions = ["create", "update", "delete", "transfer"]
     resource_types = ["product", "category", "warehouse", "stock_level", "stock_transfer"]
 
-    for i in range(50):
+    for _i in range(50):
         action = random.choice(actions)
         resource_type = random.choice(resource_types)
 
@@ -423,7 +693,7 @@ def create_audit_logs(db: Session, admin_user: User, products: list[Product], ca
                 "changes": {
                     "name": "Updated product name" if action == "update" else None,
                     "price": "Price changed to $99.99" if action == "update" else None,
-                }
+                },
             }
         elif resource_type == "category":
             resource_id = random.choice(categories).id
@@ -432,7 +702,7 @@ def create_audit_logs(db: Session, admin_user: User, products: list[Product], ca
                 "changes": {
                     "name": "Updated category name" if action == "update" else None,
                     "description": "Updated description" if action == "update" else None,
-                }
+                },
             }
         else:
             # Use a random UUID for other resource types
@@ -449,7 +719,7 @@ def create_audit_logs(db: Session, admin_user: User, products: list[Product], ca
             resource_type=resource_type,
             resource_id=resource_id,
             details=details,
-            ip_address="127.0.0.1"  # Demo IP address
+            ip_address="127.0.0.1",  # Demo IP address
         )
         db.add(audit_log)
         audit_logs.append(audit_log)
@@ -509,7 +779,7 @@ def main():
         low_stock_count = low_stock_result.scalar()
         print(f"✓ Low stock alerts: {low_stock_count}")
 
-        print(f"\n🎉 Database seeding completed successfully!")
+        print("\n🎉 Database seeding completed successfully!")
         print("Demo credentials: demo@workermill.com / demo1234")
 
     except Exception as e:
